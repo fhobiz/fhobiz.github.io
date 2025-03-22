@@ -133,29 +133,29 @@
     leftButton.addEventListener('touchstart', (e) => {
       keys['ArrowLeft'] = true;
       e.preventDefault();
-    });
+    }, { passive: false });
     leftButton.addEventListener('touchend', (e) => {
       keys['ArrowLeft'] = false;
       e.preventDefault();
-    });
+    }, { passive: false });
 
     rightButton.addEventListener('touchstart', (e) => {
       keys['ArrowRight'] = true;
       e.preventDefault();
-    });
+    }, { passive: false });
     rightButton.addEventListener('touchend', (e) => {
       keys['ArrowRight'] = false;
       e.preventDefault();
-    });
+    }, { passive: false });
 
     jumpButton.addEventListener('touchstart', (e) => {
       keys['ArrowUp'] = true;
       e.preventDefault();
-    });
+    }, { passive: false });
     jumpButton.addEventListener('touchend', (e) => {
       keys['ArrowUp'] = false;
       e.preventDefault();
-    });
+    }, { passive: false });
 
     function update() {
       // Horizontal movement
@@ -237,13 +237,15 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // Start game on button click
+    // Start game on button click or touch
     const startButton = document.getElementById('startButton');
     const startScreen = document.getElementById('startScreen');
-    startButton.addEventListener('click', () => {
+    function startGame() {
       startScreen.style.display = 'none';
       gameLoop();
-    });
+    }
+    startButton.addEventListener('click', startGame);
+    startButton.addEventListener('touchstart', startGame, { passive: false });
   </script>
 </body>
 </html>
