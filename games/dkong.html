@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Donkey Kong-Inspired Game</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #111;
+    }
+  </style>
+</head>
+<body>
+  <!-- Background music (royalty-free sample) -->
+  <audio id="bgMusic" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop autoplay></audio>
+  
+  <canvas id="gameCanvas"></canvas>
+  
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Resize canvas to fill the browser window
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      // Update platform positions on resize if needed
+      platforms[0].width = canvas.width;
+      platforms[0].y = canvas.height - 60;
+      platforms[1].x = canvas.width / 4;
+      platforms[1].y = canvas.height - 150;
+      platforms[2].x = canvas.width / 2;
+      platforms[2].y = canvas.height - 250;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Game objects
+    const player = {
+      x: 50,
+      y: canvas.height - 100,
+      width: 40,
+      height: 40,
+      dx: 0,
+      dy: 0,
+      speed: 5,
+      jumping: false
+    };
+
+    const gravity = 0.5;
+
+    const platforms = [
+      { x: 0, y: canvas.height - 60, width: canvas.width, height: 20 },
+      { x: canvas.width / 4, y: canvas.height - 150, width: 150, height: 20 },
+      { x: canvas.width / 2, y: canvas.height - 250, width: 150, height: 20 }
+    ];
+
+    // Simple controls
+    const keys = {};
+    document.addEventListener('keydown', (e) => keys[e.key] = true);
+    document.addEventListener('keyup', (e) => keys[e.key] = false);
+
+    function update() {
+      // Horizontal movement
+      if (keys['ArrowRight'] || keys['d']) {
+        player.dx = player.speed;
+      } else if (keys['ArrowLeft'] || keys['a']) {
+        player.dx = -player.speed;
+      } else {
+        player.dx = 0;
+      }
+
+      // Jumping
+      if ((keys['ArrowUp'] || keys['w'] || keys[' ']) && !player.jumping) {
+        player.dy = -10;
+        player.jumping = true;
+      }
+
+      // Apply gravity
+      player.dy += gravity;
+
+      // Update player position
+      player.x += player.dx;
+      player.y += player.dy;
+
+      // Collision detection with platforms
+      platforms.forEach(platform => {
+        if (player.x < platform.x + platform.width &&
+            player.x + player.width > platform.x &&
+            player.y < platform.y + platform.height &&
+            player.y + player.height > platform.y) {
+          // Simple collision resolution when falling
+          if (player.dy > 0) {
+            player.y = platform.y - player.height;
+            player.dy = 0;
+            player.jumping = false;
+          }
+        }
+      });
+
+      // Boundaries
+      if (player.x < 0) player.x = 0;
+      if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+      if (player.y + player.height > canvas.height) {
+        player.y = canvas.height - player.height;
+        player.dy = 0;
+        player.jumping = false;
+      }
+    }
+
+    function draw() {
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw platforms
+      ctx.fillStyle = '#654321';
+      platforms.forEach(platform => {
+        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+      });
+
+      // Draw player (red block)
+      ctx.fillStyle = '#FF0000';
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+
+      // Draw a "barrel" as a nod to Donkey Kong (brown circle)
+      ctx.fillStyle = '#964B00';
+      ctx.beginPath();
+      ctx.arc(canvas.width - 100, canvas.height - 100, 20, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
+</body>
+</html>
