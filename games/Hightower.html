@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>High Low Game</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; }
+    input { padding: 5px; font-size: 1rem; }
+    button { padding: 5px 10px; font-size: 1rem; margin-left: 5px; }
+    .section { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>High Low Game</h1>
+  <!-- Player 1 section -->
+  <div id="player1" class="section">
+    <h2>Player 1: Set a secret number (1-99)</h2>
+    <input type="number" id="secretNumber" min="1" max="99">
+    <button onclick="setSecret()">Submit</button>
+  </div>
+  
+  <!-- Player 2 section -->
+  <div id="player2" class="section" style="display:none;">
+    <h2>Player 2: Guess the number (5 tries)</h2>
+    <input type="number" id="guess" min="1" max="99">
+    <button onclick="makeGuess()">Guess</button>
+    <p id="feedback"></p>
+    <p id="attempts"></p>
+  </div>
+  
+  <script>
+    let secret;
+    let attempts = 0;
+    const maxAttempts = 5;
+    
+    function setSecret() {
+      const input = document.getElementById("secretNumber").value;
+      secret = parseInt(input);
+      if(isNaN(secret) || secret < 1 || secret > 99) {
+        alert("Enter a valid number between 1 and 99.");
+        return;
+      }
+      // Hide Player 1's input and show Player 2's guessing area.
+      document.getElementById("player1").style.display = "none";
+      document.getElementById("player2").style.display = "block";
+    }
+    
+    function makeGuess() {
+      const guessInput = document.getElementById("guess").value;
+      const guess = parseInt(guessInput);
+      if(isNaN(guess) || guess < 1 || guess > 99) {
+        alert("Enter a valid number between 1 and 99.");
+        return;
+      }
+      
+      attempts++;
+      if(guess === secret) {
+        document.getElementById("feedback").innerText = "Correct! Player 2 wins!";
+        endGame();
+      } else if(attempts >= maxAttempts) {
+        document.getElementById("feedback").innerText = `Out of tries! The secret number was ${secret}.`;
+        endGame();
+      } else if(guess < secret) {
+        document.getElementById("feedback").innerText = "Too low!";
+      } else {
+        document.getElementById("feedback").innerText = "Too high!";
+      }
+      
+      document.getElementById("attempts").innerText = `Attempt ${attempts} of ${maxAttempts}`;
+    }
+    
+    function endGame() {
+      document.getElementById("guess").disabled = true;
+    }
+  </script>
+</body>
+</html>
