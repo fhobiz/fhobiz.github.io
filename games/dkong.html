@@ -12,12 +12,33 @@
       background: #000;
       height: 100%;
     }
-    /* Ensure canvas fills the viewport */
+    /* Canvas covers the whole viewport */
     canvas {
       position: absolute;
       top: 0;
       left: 0;
       background: #111;
+    }
+    /* Start screen overlay */
+    #startScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+    }
+    #startScreen button {
+      font-size: 24px;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 10px;
+      background-color: #444;
+      color: #fff;
     }
     /* On-screen controls container */
     #controls {
@@ -44,10 +65,12 @@
   </style>
 </head>
 <body>
-  <!-- Background music (royalty-free sample) -->
-  <audio id="bgMusic" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop autoplay></audio>
-  
   <canvas id="gameCanvas"></canvas>
+
+  <!-- Start screen overlay -->
+  <div id="startScreen">
+    <button id="startButton">Start Game</button>
+  </div>
   
   <!-- Touchscreen controls -->
   <div id="controls">
@@ -64,7 +87,7 @@
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      // Update platform positions on resize if needed
+      // Update platform positions on resize
       platforms[0].width = canvas.width;
       platforms[0].y = canvas.height - 60;
       platforms[1].x = canvas.width / 4;
@@ -214,7 +237,13 @@
       requestAnimationFrame(gameLoop);
     }
 
-    gameLoop();
+    // Start game on button click
+    const startButton = document.getElementById('startButton');
+    const startScreen = document.getElementById('startScreen');
+    startButton.addEventListener('click', () => {
+      startScreen.style.display = 'none';
+      gameLoop();
+    });
   </script>
 </body>
 </html>
