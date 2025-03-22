@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Career Quest</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="container my-5">
+    <h1 class="text-center">Career Quest</h1>
+    <div id="quiz-container" class="mt-4"></div>
+    <div id="result" class="mt-4"></div>
+  </div>
+
+  <script>
+    // Define the quiz questions and options.
+    // Each option contributes to a score bucket.
+    const questions = [
+      {
+        question: "You're faced with a challenge: Would you rather solve a logic puzzle or design a new poster?",
+        options: [
+          { text: "Solve a logic puzzle", scores: { analytical: 1 } },
+          { text: "Design a new poster", scores: { creative: 1 } }
+        ]
+      },
+      {
+        question: "In a team project, do you prefer planning, hands-on work, or brainstorming innovative ideas?",
+        options: [
+          { text: "Planning", scores: { leadership: 1 } },
+          { text: "Hands-on work", scores: { practical: 1 } },
+          { text: "Brainstorming", scores: { creative: 1 } }
+        ]
+      },
+      {
+        question: "When faced with a problem, do you rely on data analysis or intuition?",
+        options: [
+          { text: "Data and analysis", scores: { analytical: 1 } },
+          { text: "Intuition and creativity", scores: { creative: 1 } }
+        ]
+      }
+      // Additional questions can be added here.
+    ];
+
+    // Initialize counters for the personality score buckets.
+    let currentQuestionIndex = 0;
+    let scores = {
+      analytical: 0,
+      creative: 0,
+      practical: 0,
+      leadership: 0
+    };
+
+    // Display the current question and its options.
+    function showQuestion() {
+      const quizContainer = document.getElementById("quiz-container");
+      quizContainer.innerHTML = "";
+      if (currentQuestionIndex < questions.length) {
+        const currentQuestion = questions[currentQuestionIndex];
+
+        const questionElem = document.createElement("h3");
+        questionElem.textContent = currentQuestion.question;
+        quizContainer.appendChild(questionElem);
+
+        const optionsList = document.createElement("div");
+        optionsList.className = "list-group mt-3";
+        
+        currentQuestion.options.forEach(option => {
+          const optionButton = document.createElement("button");
+          optionButton.className = "list-group-item list-group-item-action";
+          optionButton.textContent = option.text;
+          optionButton.onclick = () => selectOption(option);
+          optionsList.appendChild(optionButton);
+        });
+
+        quizContainer.appendChild(optionsList);
+      } else {
+        showResult();
+      }
+    }
+
+    // Update scores based on the selected option and move to the next question.
+    function selectOption(option) {
+      for (const key in option.scores) {
+        if (scores.hasOwnProperty(key)) {
+          scores[key] += option.scores[key];
+        }
+      }
+      currentQuestionIndex++;
+      showQuestion();
+    }
+
+    // After all questions are answered, display the result with a course suggestion.
+    function showResult() {
+      document.getElementById("quiz-container").style.display = "none";
+      const resultContainer = document.getElementById("result");
+
+      // Determine the personality type by the highest score.
+      let maxScore = 0;
+      let personality = "";
+      for (const trait in scores) {
+        if (scores[trait] > maxScore) {
+          maxScore = scores[trait];
+          personality = trait;
+        }
+      }
+      
+      // Provide a course recommendation based on the personality type.
+      let courseSuggestion = "";
+      switch (personality) {
+        case "analytical":
+          courseSuggestion = "You might enjoy courses in Engineering, IT, or Data Science.";
+          break;
+        case "creative":
+          courseSuggestion = "Consider courses in Design, Media, or Arts.";
+          break;
+        case "practical":
+          courseSuggestion = "A course in Applied Sciences or Technical Studies might suit you.";
+          break;
+        case "leadership":
+          courseSuggestion = "Look into Business, Management, or Public Administration courses.";
+          break;
+        default:
+          courseSuggestion = "Explore our range of courses to find the perfect match!";
+      }
+      
+      resultContainer.innerHTML = `
+        <h2>Your Profile: ${personality.charAt(0).toUpperCase() + personality.slice(1)}</h2>
+        <p>${courseSuggestion}</p>
+      `;
+    }
+
+    // Start the quiz by showing the first question.
+    showQuestion();
+  </script>
+</body>
+</html>
