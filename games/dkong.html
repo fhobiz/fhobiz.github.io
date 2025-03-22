@@ -17,6 +17,28 @@
       height: auto;
       background: #111;
     }
+    /* On-screen controls container */
+    #controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
+      z-index: 10;
+    }
+    #controls button {
+      font-size: 18px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background-color: #444;
+      color: #fff;
+      opacity: 0.8;
+    }
+    #controls button:active {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -24,6 +46,13 @@
   <audio id="bgMusic" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop autoplay></audio>
   
   <canvas id="gameCanvas"></canvas>
+  
+  <!-- Touchscreen controls -->
+  <div id="controls">
+    <button id="leftButton">Left</button>
+    <button id="jumpButton">Jump</button>
+    <button id="rightButton">Right</button>
+  </div>
   
   <script>
     const canvas = document.getElementById('gameCanvas');
@@ -64,10 +93,42 @@
       { x: canvas.width / 2, y: canvas.height - 250, width: 150, height: 20 }
     ];
 
-    // Simple controls
+    // Simple keyboard controls
     const keys = {};
     document.addEventListener('keydown', (e) => keys[e.key] = true);
     document.addEventListener('keyup', (e) => keys[e.key] = false);
+
+    // Touchscreen button controls
+    const leftButton = document.getElementById('leftButton');
+    const rightButton = document.getElementById('rightButton');
+    const jumpButton = document.getElementById('jumpButton');
+
+    leftButton.addEventListener('touchstart', (e) => {
+      keys['ArrowLeft'] = true;
+      e.preventDefault();
+    });
+    leftButton.addEventListener('touchend', (e) => {
+      keys['ArrowLeft'] = false;
+      e.preventDefault();
+    });
+
+    rightButton.addEventListener('touchstart', (e) => {
+      keys['ArrowRight'] = true;
+      e.preventDefault();
+    });
+    rightButton.addEventListener('touchend', (e) => {
+      keys['ArrowRight'] = false;
+      e.preventDefault();
+    });
+
+    jumpButton.addEventListener('touchstart', (e) => {
+      keys['ArrowUp'] = true;
+      e.preventDefault();
+    });
+    jumpButton.addEventListener('touchend', (e) => {
+      keys['ArrowUp'] = false;
+      e.preventDefault();
+    });
 
     function update() {
       // Horizontal movement
@@ -98,7 +159,7 @@
             player.x + player.width > platform.x &&
             player.y < platform.y + platform.height &&
             player.y + player.height > platform.y) {
-          // Simple collision resolution when falling
+          // Collision resolution when falling
           if (player.dy > 0) {
             player.y = platform.y - player.height;
             player.dy = 0;
