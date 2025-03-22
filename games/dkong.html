@@ -5,16 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Donkey Kong-Inspired Game</title>
   <style>
-    body {
+    html, body {
       margin: 0;
       padding: 0;
-      background: #000;
       overflow: hidden;
+      background: #000;
+      height: 100%;
     }
+    /* Ensure canvas fills the viewport */
     canvas {
-      display: block;
-      width: 100%;
-      height: auto;
+      position: absolute;
+      top: 0;
+      left: 0;
       background: #111;
     }
     /* On-screen controls container */
@@ -58,7 +60,7 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Resize canvas to fill the browser window
+    // Resize canvas to fill the entire viewport
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -69,6 +71,8 @@
       platforms[1].y = canvas.height - 150;
       platforms[2].x = canvas.width / 2;
       platforms[2].y = canvas.height - 250;
+      // Reset player position relative to new canvas size
+      player.y = canvas.height - 100;
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
@@ -197,6 +201,11 @@
       ctx.beginPath();
       ctx.arc(canvas.width - 100, canvas.height - 100, 20, 0, Math.PI * 2);
       ctx.fill();
+
+      // Debug text
+      ctx.fillStyle = 'white';
+      ctx.font = '20px sans-serif';
+      ctx.fillText("Game Running", 20, 30);
     }
 
     function gameLoop() {
