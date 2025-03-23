@@ -82,8 +82,28 @@
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+    
+    // Define game objects first
+    const player = {
+      x: 50,
+      y: 0, // will be updated in resizeCanvas
+      width: 40,
+      height: 40,
+      dx: 0,
+      dy: 0,
+      speed: 5,
+      jumping: false
+    };
 
-    // Resize canvas to fill the entire viewport
+    const gravity = 0.5;
+
+    const platforms = [
+      { x: 0, y: 0, width: 0, height: 20 }, // will be updated in resizeCanvas
+      { x: 0, y: 0, width: 150, height: 20 },
+      { x: 0, y: 0, width: 150, height: 20 }
+    ];
+
+    // Now define the canvas resize function
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -99,26 +119,6 @@
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
-
-    // Game objects
-    const player = {
-      x: 50,
-      y: canvas.height - 100,
-      width: 40,
-      height: 40,
-      dx: 0,
-      dy: 0,
-      speed: 5,
-      jumping: false
-    };
-
-    const gravity = 0.5;
-
-    const platforms = [
-      { x: 0, y: canvas.height - 60, width: canvas.width, height: 20 },
-      { x: canvas.width / 4, y: canvas.height - 150, width: 150, height: 20 },
-      { x: canvas.width / 2, y: canvas.height - 250, width: 150, height: 20 }
-    ];
 
     // Simple keyboard controls
     const keys = {};
@@ -241,6 +241,7 @@
     const startButton = document.getElementById('startButton');
     const startScreen = document.getElementById('startScreen');
     function startGame() {
+      console.log('Game started');
       startScreen.style.display = 'none';
       gameLoop();
     }
@@ -249,3 +250,4 @@
   </script>
 </body>
 </html>
+
