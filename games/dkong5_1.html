@@ -75,8 +75,6 @@
   <div id="overlay">
     <div id="message">Donkey Kong-Inspired Game</div>
     <button id="startButton">Start Game</button>
-    <button id="instructionsButton">Instructions</button>
-    <button id="backButton" style="display: none;">Back</button>
   </div>
   <!-- On-screen controls -->
   <div id="controls">
@@ -190,44 +188,6 @@
       e.preventDefault();
     }, { passive: false });
 
-    // Instructions button event listeners
-    const instructionsButton = document.getElementById('instructionsButton');
-    const backButton = document.getElementById('backButton');
-    instructionsButton.addEventListener('click', showInstructions);
-    instructionsButton.addEventListener('touchstart', (e) => { 
-      e.preventDefault();
-      showInstructions();
-    }, { passive: false });
-    backButton.addEventListener('click', hideInstructions);
-    backButton.addEventListener('touchstart', (e) => { 
-      e.preventDefault();
-      hideInstructions();
-    }, { passive: false });
-
-    function showInstructions() {
-      const message = document.getElementById('message');
-      message.innerHTML =
-        "Instructions:<br><br>" +
-        "• Use arrow keys or on-screen buttons to move left/right and jump.<br>" +
-        "• Avoid barrels and reach the princess to advance levels.<br>" +
-        "• Your time (in seconds) is recorded as your score.<br>" +
-        "• Complete level 5 to win.<br>" +
-        "• After each level (except level 5), the game pauses briefly before starting the next level.";
-      // Hide the Start and Instructions buttons; show Back button
-      document.getElementById('startButton').style.display = "none";
-      instructionsButton.style.display = "none";
-      backButton.style.display = "block";
-    }
-
-    function hideInstructions() {
-      const message = document.getElementById('message');
-      message.textContent = "Donkey Kong-Inspired Game";
-      // Restore the Start and Instructions buttons; hide Back button
-      document.getElementById('startButton').style.display = "block";
-      instructionsButton.style.display = "block";
-      backButton.style.display = "none";
-    }
-
     // Update positions for player and barrels
     function update() {
       // Player movement
@@ -295,7 +255,7 @@
         }
       });
 
-      // Remove barrels that fall off screen
+      // Remove barrels off screen
       for (let i = barrels.length - 1; i >= 0; i--) {
         if (barrels[i].y - barrels[i].radius > canvas.height) {
           barrels.splice(i, 1);
@@ -453,10 +413,8 @@
       gameState = "playing";
       const overlay = document.getElementById('overlay');
       overlay.style.display = "none";
-      // Ensure the Start and Instructions buttons are visible on a fresh start
+      // Ensure the Start Game button is visible on a fresh start
       document.getElementById('startButton').style.display = "block";
-      instructionsButton.style.display = "block";
-      backButton.style.display = "none";
       spawnInterval = setInterval(spawnBarrel, 3000);
       gameLoop();
     }
