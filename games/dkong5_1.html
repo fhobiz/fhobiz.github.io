@@ -144,9 +144,10 @@
       // Position player on ground
       player.y = canvas.height - 100;
       
-      // Position princess on a platform near the top right
-      princess.x = canvas.width - 250;
-      princess.y = canvas.height - 350;
+      // Position princess on the upper platform
+      // Adjusted so the princess sits on the platform for easy collision detection.
+      princess.x = platforms[2].x + platforms[2].width - princess.width - 10;
+      princess.y = platforms[2].y - princess.height;
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
@@ -216,7 +217,6 @@
             player.x + player.width > platform.x &&
             player.y < platform.y + platform.height &&
             player.y + player.height > platform.y) {
-          // Resolve collision only when falling
           if (player.dy > 0) {
             player.y = platform.y - player.height;
             player.dy = 0;
@@ -246,19 +246,17 @@
               barrel.y + barrel.radius > platform.y &&
               barrel.y - barrel.radius < platform.y + platform.height &&
               barrel.dy > 0) {
-            // Align barrel on platform
             barrel.y = platform.y - barrel.radius;
             barrel.dy = 0;
             onPlatform = true;
           }
         });
         if (onPlatform && barrel.dx === 0) {
-          // Choose a horizontal direction
           barrel.dx = Math.random() < 0.5 ? -2 : 2;
         }
       });
 
-      // Remove barrels that have fallen off screen
+      // Remove barrels off screen
       for (let i = barrels.length - 1; i >= 0; i--) {
         if (barrels[i].y - barrels[i].radius > canvas.height) {
           barrels.splice(i, 1);
@@ -268,26 +266,24 @@
 
     // Check collisions between player, barrels, and princess
     function checkCollisions() {
-      // Player with barrels
+      // Collision: player with barrels
       for (let barrel of barrels) {
-        const distX = Math.abs((barrel.x) - (player.x + player.width / 2));
-        const distY = Math.abs((barrel.y) - (player.y + player.height / 2));
+        const distX = Math.abs(barrel.x - (player.x + player.width / 2));
+        const distY = Math.abs(barrel.y - (player.y + player.height / 2));
         if (distX <= barrel.radius + player.width / 2 &&
             distY <= barrel.radius + player.height / 2) {
           endGame("gameover");
           return;
         }
       }
-      // Player with princess (goal)
+      // Collision: player with princess
       if (player.x < princess.x + princess.width &&
           player.x + player.width > princess.x &&
           player.y < princess.y + princess.height &&
           player.y + player.height > princess.y) {
-        // Level complete: if not yet level 5, go to next level.
         if (level < 5) {
           levelUp();
         } else {
-          // On level 5, winning ends the game.
           endGame("win");
         }
       }
@@ -356,7 +352,7 @@
       barrels.push(newBarrel);
     }
 
-    // Level up: increment level, reset player, clear barrels and adjust barrel spawn rate
+    // Level up: increase level, reset player, clear barrels and adjust spawn rate
     function levelUp() {
       level++;
       player.x = 50;
@@ -365,13 +361,12 @@
       player.dy = 0;
       player.jumping = false;
       barrels.length = 0;
-      // Adjust spawn interval: decrease delay as level increases (min 1000ms)
       const newDelay = Math.max(1000, 3000 - (level - 1) * 500);
       clearInterval(spawnInterval);
       spawnInterval = setInterval(spawnBarrel, newDelay);
     }
 
-    // End game: state can be "gameover" or "win". Show final score.
+    // End game: display final score on overlay
     function endGame(state) {
       gameState = state;
       clearInterval(spawnInterval);
@@ -386,7 +381,7 @@
       overlay.style.display = "flex";
     }
 
-    // Reset the game (start a new game)
+    // Reset the game for a new start
     function resetGame() {
       level = 1;
       startTime = Date.now();
@@ -398,7 +393,6 @@
       barrels.length = 0;
       gameState = "playing";
       document.getElementById('overlay').style.display = "none";
-      // Start barrel spawning with initial delay (3000ms)
       spawnInterval = setInterval(spawnBarrel, 3000);
       gameLoop();
     }
@@ -423,3 +417,4 @@
   </script>
 </body>
 </html>
+
