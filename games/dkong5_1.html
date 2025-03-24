@@ -19,7 +19,7 @@
       left: 0;
       background: #111;
     }
-    /* Overlay for start, game over, and win screens */
+    /* Overlay for Start, Game Over, Win, and Level-Up messages */
     #overlay {
       position: fixed;
       top: 0;
@@ -71,7 +71,7 @@
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
-  <!-- Overlay for Start, Game Over, and Win screens -->
+  <!-- Overlay for Start, Game Over, Win, and Level-Up messages -->
   <div id="overlay">
     <div id="message">Donkey Kong-Inspired Game</div>
     <button id="startButton">Start Game</button>
@@ -88,11 +88,11 @@
     const ctx = canvas.getContext('2d');
 
     // Game state variables
-    let gameState = "start"; // "start", "playing", "gameover", "win"
+    let gameState = "start"; // "start", "playing", "paused", "gameover", "win"
     let spawnInterval; // for barrel spawning
     const barrels = []; // active barrels array
     let level = 1;
-    let startTime = 0;
+    let startTime = 0; // game timer start
 
     // Define player (red square)
     const player = {
@@ -108,9 +108,9 @@
 
     const gravity = 0.5;
 
-    // Define platforms – these get repositioned on resize
+    // Define platforms – repositioned on resize
     const platforms = [
-      { x: 0, y: 0, width: 0, height: 20 }, // ground platform
+      { x: 0, y: 0, width: 0, height: 20 }, // ground
       { x: 0, y: 0, width: 150, height: 20 }, // mid platform
       { x: 0, y: 0, width: 150, height: 20 }  // upper platform
     ];
@@ -123,12 +123,12 @@
       height: 60
     };
 
-    // Resize canvas and update positions
+    // Resize canvas and update object positions
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       
-      // Ground spans the entire width
+      // Ground spans full width
       platforms[0].x = 0;
       platforms[0].y = canvas.height - 60;
       platforms[0].width = canvas.width;
@@ -144,10 +144,9 @@
       // Position player on ground
       player.y = canvas.height - 100;
       
-      // Position princess on the upper platform
-      // Adjusted so the princess sits on the platform for easy collision detection.
-      princess.x = platforms[2].x + platforms[2].width - princess.width - 10;
-      princess.y = platforms[2].y - princess.height;
+      // Place princess at original position near top right
+      princess.x = canvas.width - 250;
+      princess.y = canvas.height - 350;
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
@@ -189,9 +188,9 @@
       e.preventDefault();
     }, { passive: false });
 
-    // Update player and barrel positions
+    // Update positions for player and barrels
     function update() {
-      // Player horizontal movement
+      // Player movement
       if (keys['ArrowRight'] || keys['d']) {
         player.dx = player.speed;
       } else if (keys['ArrowLeft'] || keys['a']) {
@@ -206,12 +205,12 @@
         player.jumping = true;
       }
 
-      // Apply gravity and update player
+      // Apply gravity and update player position
       player.dy += gravity;
       player.x += player.dx;
       player.y += player.dy;
 
-      // Collision detection: player with platforms
+      // Collision: player with platforms
       platforms.forEach(platform => {
         if (player.x < platform.x + platform.width &&
             player.x + player.width > platform.x &&
@@ -225,7 +224,7 @@
         }
       });
 
-      // Player boundaries
+      // Boundaries for player
       if (player.x < 0) player.x = 0;
       if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
       if (player.y + player.height > canvas.height) {
@@ -256,7 +255,7 @@
         }
       });
 
-      // Remove barrels off screen
+      // Remove barrels that fall off screen
       for (let i = barrels.length - 1; i >= 0; i--) {
         if (barrels[i].y - barrels[i].radius > canvas.height) {
           barrels.splice(i, 1);
@@ -282,7 +281,7 @@
           player.y < princess.y + princess.height &&
           player.y + player.height > princess.y) {
         if (level < 5) {
-          levelUp();
+          pauseForLevelUp();
         } else {
           endGame("win");
         }
@@ -352,21 +351,38 @@
       barrels.push(newBarrel);
     }
 
-    // Level up: increase level, reset player, clear barrels and adjust spawn rate
-    function levelUp() {
-      level++;
-      player.x = 50;
-      player.y = canvas.height - 100;
-      player.dx = 0;
-      player.dy = 0;
-      player.jumping = false;
-      barrels.length = 0;
-      const newDelay = Math.max(1000, 3000 - (level - 1) * 500);
-      clearInterval(spawnInterval);
-      spawnInterval = setInterval(spawnBarrel, newDelay);
+    // Pause the game for a level-up transition
+    function pauseForLevelUp() {
+      gameState = "paused";
+      const pauseDuration = 3000; // 3 seconds
+      const overlay = document.getElementById('overlay');
+      const message = document.getElementById('message');
+      message.textContent = "Level " + level + " Completed! Starting Level " + (level + 1) + "...";
+      overlay.style.display = "flex";
+      
+      // After pause, update game variables and resume
+      setTimeout(() => {
+        // Adjust timer so pause time doesn't count
+        startTime += pauseDuration;
+        level++;
+        // Reset player and clear barrels
+        player.x = 50;
+        player.y = canvas.height - 100;
+        player.dx = 0;
+        player.dy = 0;
+        player.jumping = false;
+        barrels.length = 0;
+        // Adjust barrel spawn rate (min delay 1000ms)
+        clearInterval(spawnInterval);
+        const newDelay = Math.max(1000, 3000 - (level - 1) * 500);
+        spawnInterval = setInterval(spawnBarrel, newDelay);
+        overlay.style.display = "none";
+        gameState = "playing";
+        gameLoop();
+      }, pauseDuration);
     }
 
-    // End game: display final score on overlay
+    // End the game and show final score
     function endGame(state) {
       gameState = state;
       clearInterval(spawnInterval);
@@ -417,4 +433,5 @@
   </script>
 </body>
 </html>
+
 
