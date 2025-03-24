@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Donkey Kong-Inspired Game</title>
+  <title>Donkey Kong-Inspired Game - 5 Levels</title>
   <style>
     html, body {
       margin: 0;
@@ -19,7 +19,7 @@
       left: 0;
       background: #111;
     }
-    /* Overlay for start, game over, and win screens */
+    /* Overlay for start, game over, and level complete screens */
     #overlay {
       position: fixed;
       top: 0;
@@ -71,7 +71,7 @@
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
-  <!-- Overlay for Start, Game Over, and Win screens -->
+  <!-- Overlay for Start, Game Over, and Level Complete screens -->
   <div id="overlay">
     <div id="message">Donkey Kong-Inspired Game</div>
     <button id="startButton">Start Game</button>
@@ -87,17 +87,16 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Game state variables
+    // Global game variables
     let gameState = "start"; // "start", "playing", "gameover", "win"
-    let spawnInterval; // for barrel spawning
-    const barrels = []; // active barrels array
-    let level = 1;
-    let startTime = 0;
+    let currentLevel = 1; // Levels 1 through 5
+    let spawnInterval;    // for barrel spawning
+    const barrels = [];   // active barrels list
 
-    // Define player (red square)
+    // Define player
     const player = {
       x: 50,
-      y: 0, // set in resizeCanvas()
+      y: 0, // set in resizeCanvas
       width: 40,
       height: 40,
       dx: 0,
@@ -108,14 +107,14 @@
 
     const gravity = 0.5;
 
-    // Define platforms – these get repositioned on resize
+    // Define platforms – positions updated on resize
     const platforms = [
-      { x: 0, y: 0, width: 0, height: 20 }, // ground platform
+      { x: 0, y: 0, width: 0, height: 20 }, // ground
       { x: 0, y: 0, width: 150, height: 20 }, // mid platform
       { x: 0, y: 0, width: 150, height: 20 }  // upper platform
     ];
 
-    // Define princess (goal – pink rectangle)
+    // Define princess (goal)
     const princess = {
       x: 0,
       y: 0,
@@ -123,12 +122,12 @@
       height: 60
     };
 
-    // Resize canvas and update positions
+    // Update canvas and game objects on window resize
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       
-      // Ground spans the entire width
+      // Ground spans full width
       platforms[0].x = 0;
       platforms[0].y = canvas.height - 60;
       platforms[0].width = canvas.width;
@@ -141,10 +140,10 @@
       platforms[2].x = canvas.width / 2;
       platforms[2].y = canvas.height - 250;
       
-      // Position player on ground
+      // Place player on ground
       player.y = canvas.height - 100;
       
-      // Position princess on a platform near the top right
+      // Place princess on a small platform near the top right
       princess.x = canvas.width - 250;
       princess.y = canvas.height - 350;
     }
@@ -156,7 +155,7 @@
     document.addEventListener('keydown', (e) => keys[e.key] = true);
     document.addEventListener('keyup', (e) => keys[e.key] = false);
 
-    // Touchscreen controls for on-screen buttons
+    // Touchscreen controls
     const leftButton = document.getElementById('leftButton');
     const rightButton = document.getElementById('rightButton');
     const jumpButton = document.getElementById('jumpButton');
@@ -188,9 +187,9 @@
       e.preventDefault();
     }, { passive: false });
 
-    // Update player and barrel positions
+    // Update player and barrels
     function update() {
-      // Player horizontal movement
+      // Player movement
       if (keys['ArrowRight'] || keys['d']) {
         player.dx = player.speed;
       } else if (keys['ArrowLeft'] || keys['a']) {
@@ -199,24 +198,21 @@
         player.dx = 0;
       }
 
-      // Player jump
       if ((keys['ArrowUp'] || keys['w'] || keys[' ']) && !player.jumping) {
         player.dy = -10;
         player.jumping = true;
       }
 
-      // Apply gravity and update player
       player.dy += gravity;
       player.x += player.dx;
       player.y += player.dy;
 
-      // Collision detection: player with platforms
+      // Player collision with platforms
       platforms.forEach(platform => {
         if (player.x < platform.x + platform.width &&
             player.x + player.width > platform.x &&
             player.y < platform.y + platform.height &&
             player.y + player.height > platform.y) {
-          // Resolve collision only when falling
           if (player.dy > 0) {
             player.y = platform.y - player.height;
             player.dy = 0;
@@ -246,19 +242,18 @@
               barrel.y + barrel.radius > platform.y &&
               barrel.y - barrel.radius < platform.y + platform.height &&
               barrel.dy > 0) {
-            // Align barrel on platform
             barrel.y = platform.y - barrel.radius;
             barrel.dy = 0;
             onPlatform = true;
           }
         });
         if (onPlatform && barrel.dx === 0) {
-          // Choose a horizontal direction
-          barrel.dx = Math.random() < 0.5 ? -2 : 2;
+          // Increase barrel speed slightly based on level
+          barrel.dx = (Math.random() < 0.5 ? -2 : 2) * (1 + (currentLevel - 1) * 0.2);
         }
       });
-
-      // Remove barrels that have fallen off screen
+      
+      // Remove barrels off screen
       for (let i = barrels.length - 1; i >= 0; i--) {
         if (barrels[i].y - barrels[i].radius > canvas.height) {
           barrels.splice(i, 1);
@@ -266,34 +261,28 @@
       }
     }
 
-    // Check collisions between player, barrels, and princess
+    // Check collisions: player with barrels and princess
     function checkCollisions() {
-      // Player with barrels
+      // Player-barrel collision
       for (let barrel of barrels) {
-        const distX = Math.abs((barrel.x) - (player.x + player.width / 2));
-        const distY = Math.abs((barrel.y) - (player.y + player.height / 2));
+        const distX = Math.abs(barrel.x - (player.x + player.width / 2));
+        const distY = Math.abs(barrel.y - (player.y + player.height / 2));
         if (distX <= barrel.radius + player.width / 2 &&
             distY <= barrel.radius + player.height / 2) {
           endGame("gameover");
           return;
         }
       }
-      // Player with princess (goal)
+      // Player-princess collision
       if (player.x < princess.x + princess.width &&
           player.x + player.width > princess.x &&
           player.y < princess.y + princess.height &&
           player.y + player.height > princess.y) {
-        // Level complete: if not yet level 5, go to next level.
-        if (level < 5) {
-          levelUp();
-        } else {
-          // On level 5, winning ends the game.
-          endGame("win");
-        }
+        endGame("win");
       }
     }
 
-    // Draw game objects and HUD
+    // Draw game objects
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -319,14 +308,10 @@
       ctx.fillStyle = '#FF69B4';
       ctx.fillRect(princess.x, princess.y, princess.width, princess.height);
 
-      // Draw HUD (level & time)
+      // Draw level info in top-right
       ctx.fillStyle = 'white';
       ctx.font = '20px sans-serif';
-      ctx.fillText("Level: " + level, 20, 30);
-      if (startTime) {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        ctx.fillText("Time: " + elapsed + "s", 20, 60);
-      }
+      ctx.fillText("Level: " + currentLevel, canvas.width - 120, 30);
     }
 
     // Main game loop
@@ -337,11 +322,12 @@
         draw();
         requestAnimationFrame(gameLoop);
       } else {
+        // Draw final state
         draw();
       }
     }
 
-    // Spawn a barrel from the upper platform
+    // Spawn a barrel from the upper platform (platforms[2])
     function spawnBarrel() {
       if (gameState !== "playing") return;
       const spawnX = platforms[2].x + 10;
@@ -356,40 +342,32 @@
       barrels.push(newBarrel);
     }
 
-    // Level up: increment level, reset player, clear barrels and adjust barrel spawn rate
-    function levelUp() {
-      level++;
-      player.x = 50;
-      player.y = canvas.height - 100;
-      player.dx = 0;
-      player.dy = 0;
-      player.jumping = false;
-      barrels.length = 0;
-      // Adjust spawn interval: decrease delay as level increases (min 1000ms)
-      const newDelay = Math.max(1000, 3000 - (level - 1) * 500);
-      clearInterval(spawnInterval);
-      spawnInterval = setInterval(spawnBarrel, newDelay);
-    }
-
-    // End game: state can be "gameover" or "win". Show final score.
+    // End game with "gameover" or "win"
     function endGame(state) {
       gameState = state;
       clearInterval(spawnInterval);
       const overlay = document.getElementById('overlay');
       const message = document.getElementById('message');
-      const finalScore = Math.floor((Date.now() - startTime) / 1000);
       if (state === "gameover") {
-        message.textContent = "Game Over! Score: " + finalScore + "s";
+        message.textContent = "Game Over! Tap to restart.";
+        currentLevel = 1; // Reset level on game over
       } else if (state === "win") {
-        message.textContent = "You Win! Score: " + finalScore + "s";
+        if (currentLevel < 5) {
+          message.textContent = "Level " + currentLevel + " complete! Tap to start Level " + (currentLevel + 1) + ".";
+        } else {
+          message.textContent = "Congratulations! You completed Level 5!";
+        }
       }
       overlay.style.display = "flex";
     }
 
-    // Reset the game (start a new game)
+    // Reset game variables and start (or advance) level
     function resetGame() {
-      level = 1;
-      startTime = Date.now();
+      // If coming from a win and not game over, advance level (unless already at 5)
+      if (gameState === "win" && currentLevel < 5) {
+        currentLevel++;
+      }
+      // Reset player state
       player.x = 50;
       player.y = canvas.height - 100;
       player.dx = 0;
@@ -398,12 +376,17 @@
       barrels.length = 0;
       gameState = "playing";
       document.getElementById('overlay').style.display = "none";
-      // Start barrel spawning with initial delay (3000ms)
-      spawnInterval = setInterval(spawnBarrel, 3000);
+
+      // Set spawn interval based on level (faster spawn at higher levels)
+      let spawnTime = 3000 - (currentLevel - 1) * 500;
+      spawnTime = Math.max(1000, spawnTime);
+      clearInterval(spawnInterval);
+      spawnInterval = setInterval(spawnBarrel, spawnTime);
+      
       gameLoop();
     }
 
-    // Start game on overlay button tap/click
+    // Start game when overlay button is clicked/tapped
     const startButton = document.getElementById('startButton');
     const overlay = document.getElementById('overlay');
     startButton.addEventListener('click', resetGame);
@@ -411,12 +394,12 @@
       e.preventDefault();
       resetGame();
     }, { passive: false });
-    
-    // Allow restart on overlay tap for win/gameover
+
+    // Allow restart/advance on overlay tap
     overlay.addEventListener('click', () => {
       if (gameState !== "playing") resetGame();
     });
-    overlay.addEventListener('touchstart', (e) => { 
+    overlay.addEventListener('touchstart', (e) => {
       if (gameState !== "playing") resetGame();
       e.preventDefault();
     }, { passive: false });
