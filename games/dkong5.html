@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Donkey Kong-Inspired Game - 5 Levels</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #000;
+      height: 100%;
+    }
+    /* Canvas fills the viewport */
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: #111;
+    }
+    /* Overlay for start, game over, and level complete screens */
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+      color: #fff;
+      font-size: 32px;
+      text-align: center;
+    }
+    #overlay button {
+      margin-top: 20px;
+      font-size: 24px;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 10px;
+      background-color: #444;
+      color: #fff;
+    }
+    /* On-screen controls container */
+    #controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
+      z-index: 10;
+    }
+    #controls button {
+      font-size: 18px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background-color: #444;
+      color: #fff;
+      opacity: 0.8;
+    }
+    #controls button:active {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <!-- Overlay for Start, Game Over, and Level Complete screens -->
+  <div id="overlay">
+    <div id="message">Donkey Kong-Inspired Game</div>
+    <button id="startButton">Start Game</button>
+  </div>
+  <!-- On-screen controls -->
+  <div id="controls">
+    <button id="leftButton">Left</button>
+    <button id="jumpButton">Jump</button>
+    <button id="rightButton">Right</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Global game variables
+    let gameState = "start"; // "start", "playing", "gameover", "win"
+    let currentLevel = 1; // Levels 1 through 5
+    let spawnInterval;    // for barrel spawning
+    const barrels = [];   // active barrels list
+
+    // Define player
+    const player = {
+      x: 50,
+      y: 0, // set in resizeCanvas
+      width: 40,
+      height: 40,
+      dx: 0,
+      dy: 0,
+      speed: 5,
+      jumping: false
+    };
+
+    const gravity = 0.5;
+
+    // Define platforms – positions updated on resize
+    const platforms = [
+      { x: 0, y: 0, width: 0, height: 20 }, // ground
+      { x: 0, y: 0, width: 150, height: 20 }, // mid platform
+      { x: 0, y: 0, width: 150, height: 20 }  // upper platform
+    ];
+
+    // Define princess (goal)
+    const princess = {
+      x: 0,
+      y: 0,
+      width: 40,
+      height: 60
+    };
+
+    // Update canvas and game objects on window resize
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      // Ground spans full width
+      platforms[0].x = 0;
+      platforms[0].y = canvas.height - 60;
+      platforms[0].width = canvas.width;
+      
+      // Mid platform
+      platforms[1].x = canvas.width / 4;
+      platforms[1].y = canvas.height - 150;
+      
+      // Upper platform
+      platforms[2].x = canvas.width / 2;
+      platforms[2].y = canvas.height - 250;
+      
+      // Place player on ground
+      player.y = canvas.height - 100;
+      
+      // Place princess on a small platform near the top right
+      princess.x = canvas.width - 250;
+      princess.y = canvas.height - 350;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Keyboard controls
+    const keys = {};
+    document.addEventListener('keydown', (e) => keys[e.key] = true);
+    document.addEventListener('keyup', (e) => keys[e.key] = false);
+
+    // Touchscreen controls
+    const leftButton = document.getElementById('leftButton');
+    const rightButton = document.getElementById('rightButton');
+    const jumpButton = document.getElementById('jumpButton');
+
+    leftButton.addEventListener('touchstart', (e) => {
+      keys['ArrowLeft'] = true;
+      e.preventDefault();
+    }, { passive: false });
+    leftButton.addEventListener('touchend', (e) => {
+      keys['ArrowLeft'] = false;
+      e.preventDefault();
+    }, { passive: false });
+
+    rightButton.addEventListener('touchstart', (e) => {
+      keys['ArrowRight'] = true;
+      e.preventDefault();
+    }, { passive: false });
+    rightButton.addEventListener('touchend', (e) => {
+      keys['ArrowRight'] = false;
+      e.preventDefault();
+    }, { passive: false });
+
+    jumpButton.addEventListener('touchstart', (e) => {
+      keys['ArrowUp'] = true;
+      e.preventDefault();
+    }, { passive: false });
+    jumpButton.addEventListener('touchend', (e) => {
+      keys['ArrowUp'] = false;
+      e.preventDefault();
+    }, { passive: false });
+
+    // Update player and barrels
+    function update() {
+      // Player movement
+      if (keys['ArrowRight'] || keys['d']) {
+        player.dx = player.speed;
+      } else if (keys['ArrowLeft'] || keys['a']) {
+        player.dx = -player.speed;
+      } else {
+        player.dx = 0;
+      }
+
+      if ((keys['ArrowUp'] || keys['w'] || keys[' ']) && !player.jumping) {
+        player.dy = -10;
+        player.jumping = true;
+      }
+
+      player.dy += gravity;
+      player.x += player.dx;
+      player.y += player.dy;
+
+      // Player collision with platforms
+      platforms.forEach(platform => {
+        if (player.x < platform.x + platform.width &&
+            player.x + player.width > platform.x &&
+            player.y < platform.y + platform.height &&
+            player.y + player.height > platform.y) {
+          if (player.dy > 0) {
+            player.y = platform.y - player.height;
+            player.dy = 0;
+            player.jumping = false;
+          }
+        }
+      });
+
+      // Player boundaries
+      if (player.x < 0) player.x = 0;
+      if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+      if (player.y + player.height > canvas.height) {
+        player.y = canvas.height - player.height;
+        player.dy = 0;
+        player.jumping = false;
+      }
+
+      // Update barrels
+      barrels.forEach(barrel => {
+        barrel.dy += gravity;
+        barrel.x += barrel.dx;
+        barrel.y += barrel.dy;
+
+        let onPlatform = false;
+        platforms.forEach(platform => {
+          if (barrel.x > platform.x && barrel.x < platform.x + platform.width &&
+              barrel.y + barrel.radius > platform.y &&
+              barrel.y - barrel.radius < platform.y + platform.height &&
+              barrel.dy > 0) {
+            barrel.y = platform.y - barrel.radius;
+            barrel.dy = 0;
+            onPlatform = true;
+          }
+        });
+        if (onPlatform && barrel.dx === 0) {
+          // Increase barrel speed slightly based on level
+          barrel.dx = (Math.random() < 0.5 ? -2 : 2) * (1 + (currentLevel - 1) * 0.2);
+        }
+      });
+      
+      // Remove barrels off screen
+      for (let i = barrels.length - 1; i >= 0; i--) {
+        if (barrels[i].y - barrels[i].radius > canvas.height) {
+          barrels.splice(i, 1);
+        }
+      }
+    }
+
+    // Check collisions: player with barrels and princess
+    function checkCollisions() {
+      // Player-barrel collision
+      for (let barrel of barrels) {
+        const distX = Math.abs(barrel.x - (player.x + player.width / 2));
+        const distY = Math.abs(barrel.y - (player.y + player.height / 2));
+        if (distX <= barrel.radius + player.width / 2 &&
+            distY <= barrel.radius + player.height / 2) {
+          endGame("gameover");
+          return;
+        }
+      }
+      // Player-princess collision
+      if (player.x < princess.x + princess.width &&
+          player.x + player.width > princess.x &&
+          player.y < princess.y + princess.height &&
+          player.y + player.height > princess.y) {
+        endGame("win");
+      }
+    }
+
+    // Draw game objects
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw platforms
+      ctx.fillStyle = '#654321';
+      platforms.forEach(platform => {
+        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+      });
+
+      // Draw player (red square)
+      ctx.fillStyle = '#FF0000';
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+
+      // Draw barrels (brown circles)
+      ctx.fillStyle = '#964B00';
+      barrels.forEach(barrel => {
+        ctx.beginPath();
+        ctx.arc(barrel.x, barrel.y, barrel.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Draw princess (pink rectangle)
+      ctx.fillStyle = '#FF69B4';
+      ctx.fillRect(princess.x, princess.y, princess.width, princess.height);
+
+      // Draw level info in top-right
+      ctx.fillStyle = 'white';
+      ctx.font = '20px sans-serif';
+      ctx.fillText("Level: " + currentLevel, canvas.width - 120, 30);
+    }
+
+    // Main game loop
+    function gameLoop() {
+      if (gameState === "playing") {
+        update();
+        checkCollisions();
+        draw();
+        requestAnimationFrame(gameLoop);
+      } else {
+        // Draw final state
+        draw();
+      }
+    }
+
+    // Spawn a barrel from the upper platform (platforms[2])
+    function spawnBarrel() {
+      if (gameState !== "playing") return;
+      const spawnX = platforms[2].x + 10;
+      const spawnY = platforms[2].y - 20;
+      const newBarrel = {
+        x: spawnX,
+        y: spawnY,
+        radius: 15,
+        dx: 0,
+        dy: 0
+      };
+      barrels.push(newBarrel);
+    }
+
+    // End game with "gameover" or "win"
+    function endGame(state) {
+      gameState = state;
+      clearInterval(spawnInterval);
+      const overlay = document.getElementById('overlay');
+      const message = document.getElementById('message');
+      if (state === "gameover") {
+        message.textContent = "Game Over! Tap to restart.";
+        currentLevel = 1; // Reset level on game over
+      } else if (state === "win") {
+        if (currentLevel < 5) {
+          message.textContent = "Level " + currentLevel + " complete! Tap to start Level " + (currentLevel + 1) + ".";
+        } else {
+          message.textContent = "Congratulations! You completed Level 5!";
+        }
+      }
+      overlay.style.display = "flex";
+    }
+
+    // Reset game variables and start (or advance) level
+    function resetGame() {
+      // If coming from a win and not game over, advance level (unless already at 5)
+      if (gameState === "win" && currentLevel < 5) {
+        currentLevel++;
+      }
+      // Reset player state
+      player.x = 50;
+      player.y = canvas.height - 100;
+      player.dx = 0;
+      player.dy = 0;
+      player.jumping = false;
+      barrels.length = 0;
+      gameState = "playing";
+      document.getElementById('overlay').style.display = "none";
+
+      // Set spawn interval based on level (faster spawn at higher levels)
+      let spawnTime = 3000 - (currentLevel - 1) * 500;
+      spawnTime = Math.max(1000, spawnTime);
+      clearInterval(spawnInterval);
+      spawnInterval = setInterval(spawnBarrel, spawnTime);
+      
+      gameLoop();
+    }
+
+    // Start game when overlay button is clicked/tapped
+    const startButton = document.getElementById('startButton');
+    const overlay = document.getElementById('overlay');
+    startButton.addEventListener('click', resetGame);
+    startButton.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      resetGame();
+    }, { passive: false });
+
+    // Allow restart/advance on overlay tap
+    overlay.addEventListener('click', () => {
+      if (gameState !== "playing") resetGame();
+    });
+    overlay.addEventListener('touchstart', (e) => {
+      if (gameState !== "playing") resetGame();
+      e.preventDefault();
+    }, { passive: false });
+  </script>
+</body>
+</html>
