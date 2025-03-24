@@ -224,7 +224,7 @@
         }
       });
 
-      // Boundaries for player
+      // Player boundaries
       if (player.x < 0) player.x = 0;
       if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
       if (player.y + player.height > canvas.height) {
@@ -255,7 +255,7 @@
         }
       });
 
-      // Remove barrels that fall off screen
+      // Remove barrels off screen
       for (let i = barrels.length - 1; i >= 0; i--) {
         if (barrels[i].y - barrels[i].radius > canvas.height) {
           barrels.splice(i, 1);
@@ -354,15 +354,16 @@
     // Pause the game for a level-up transition
     function pauseForLevelUp() {
       gameState = "paused";
-      const pauseDuration = 3000; // 3 seconds
+      const pauseDuration = 3000; // 3 seconds pause
       const overlay = document.getElementById('overlay');
       const message = document.getElementById('message');
+      // Hide the Start Game button during level transition
+      document.getElementById('startButton').style.display = "none";
       message.textContent = "Level " + level + " Completed! Starting Level " + (level + 1) + "...";
       overlay.style.display = "flex";
       
-      // After pause, update game variables and resume
       setTimeout(() => {
-        // Adjust timer so pause time doesn't count
+        // Adjust timer so pause time isn't counted
         startTime += pauseDuration;
         level++;
         // Reset player and clear barrels
@@ -382,7 +383,7 @@
       }, pauseDuration);
     }
 
-    // End the game and show final score
+    // End game and show final score
     function endGame(state) {
       gameState = state;
       clearInterval(spawnInterval);
@@ -394,6 +395,8 @@
       } else if (state === "win") {
         message.textContent = "You Win! Score: " + finalScore + "s";
       }
+      // Show the Start Game button for a new game restart
+      document.getElementById('startButton').style.display = "block";
       overlay.style.display = "flex";
     }
 
@@ -408,7 +411,10 @@
       player.jumping = false;
       barrels.length = 0;
       gameState = "playing";
-      document.getElementById('overlay').style.display = "none";
+      const overlay = document.getElementById('overlay');
+      overlay.style.display = "none";
+      // Ensure the Start Game button is visible on a fresh start
+      document.getElementById('startButton').style.display = "block";
       spawnInterval = setInterval(spawnBarrel, 3000);
       gameLoop();
     }
@@ -433,5 +439,3 @@
   </script>
 </body>
 </html>
-
-
