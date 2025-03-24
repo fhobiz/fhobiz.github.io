@@ -12,14 +12,12 @@
       background: #000;
       height: 100%;
     }
-    /* Canvas fills the viewport */
     canvas {
       position: absolute;
       top: 0;
       left: 0;
       background: #111;
     }
-    /* Overlay for Start, Game Over, Win, and Level-Up messages */
     #overlay {
       position: fixed;
       top: 0;
@@ -33,19 +31,19 @@
       align-items: center;
       z-index: 20;
       color: #fff;
-      font-size: 32px;
+      font-size: 28px;
       text-align: center;
+      padding: 20px;
     }
     #overlay button {
       margin-top: 20px;
-      font-size: 24px;
-      padding: 15px 30px;
+      font-size: 20px;
+      padding: 10px 20px;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       background-color: #444;
       color: #fff;
     }
-    /* On-screen controls container */
     #controls {
       position: fixed;
       bottom: 20px;
@@ -71,13 +69,15 @@
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
-  <!-- Overlay for Start, Game Over, Win, and Level-Up messages -->
+
+  <!-- Overlay -->
   <div id="overlay">
     <div id="message">Donkey Kong-Inspired Game</div>
     <button id="startButton">Start Game</button>
     <button id="instructionsButton">Instructions</button>
     <button id="backButton" style="display: none;">Back</button>
   </div>
+
   <!-- On-screen controls -->
   <div id="controls">
     <button id="leftButton">Left</button>
@@ -89,182 +89,105 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Game state variables
-    let gameState = "start"; // "start", "playing", "paused", "gameover", "win"
-    let spawnInterval; // for barrel spawning
-    const barrels = []; // active barrels array
-    let level = 1;
-    let startTime = 0; // game timer start
+    const overlay = document.getElementById('overlay');
+    const message = document.getElementById('message');
+    const startButton = document.getElementById('startButton');
+    const instructionsButton = document.getElementById('instructionsButton');
+    const backButton = document.getElementById('backButton');
 
-    // Define player (red square)
+    let gameState = "start";
+    let spawnInterval;
+    let level = 1;
+    let startTime = 0;
+    const barrels = [];
+
     const player = {
-      x: 50,
-      y: 0, // set in resizeCanvas()
-      width: 40,
-      height: 40,
-      dx: 0,
-      dy: 0,
-      speed: 5,
-      jumping: false
+      x: 50, y: 0, width: 40, height: 40,
+      dx: 0, dy: 0, speed: 5, jumping: false
     };
 
     const gravity = 0.5;
 
-    // Define platforms – repositioned on resize
     const platforms = [
-      { x: 0, y: 0, width: 0, height: 20 }, // ground
-      { x: 0, y: 0, width: 150, height: 20 }, // mid platform
-      { x: 0, y: 0, width: 150, height: 20 }  // upper platform
+      { x: 0, y: 0, width: 0, height: 20 },
+      { x: 0, y: 0, width: 150, height: 20 },
+      { x: 0, y: 0, width: 150, height: 20 }
     ];
 
-    // Define princess (goal – pink rectangle)
-    const princess = {
-      x: 0,
-      y: 0,
-      width: 40,
-      height: 60
-    };
+    const princess = { x: 0, y: 0, width: 40, height: 60 };
 
-    // Resize canvas and update object positions
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      
-      // Ground spans full width
+
       platforms[0].x = 0;
       platforms[0].y = canvas.height - 60;
       platforms[0].width = canvas.width;
-      
-      // Mid platform
+
       platforms[1].x = canvas.width / 4;
       platforms[1].y = canvas.height - 150;
-      
-      // Upper platform
+
       platforms[2].x = canvas.width / 2;
       platforms[2].y = canvas.height - 250;
-      
-      // Position player on ground
+
       player.y = canvas.height - 100;
-      
-      // Place princess at original position near top right
+
       princess.x = canvas.width - 250;
       princess.y = canvas.height - 350;
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // Keyboard controls
     const keys = {};
-    document.addEventListener('keydown', (e) => keys[e.key] = true);
-    document.addEventListener('keyup', (e) => keys[e.key] = false);
+    document.addEventListener('keydown', e => keys[e.key] = true);
+    document.addEventListener('keyup', e => keys[e.key] = false);
 
-    // Touchscreen controls for on-screen buttons
-    const leftButton = document.getElementById('leftButton');
-    const rightButton = document.getElementById('rightButton');
-    const jumpButton = document.getElementById('jumpButton');
-
-    leftButton.addEventListener('touchstart', (e) => {
-      keys['ArrowLeft'] = true;
-      e.preventDefault();
+    // Touch controls
+    document.getElementById('leftButton').addEventListener('touchstart', e => {
+      keys['ArrowLeft'] = true; e.preventDefault();
     }, { passive: false });
-    leftButton.addEventListener('touchend', (e) => {
-      keys['ArrowLeft'] = false;
-      e.preventDefault();
+    document.getElementById('leftButton').addEventListener('touchend', e => {
+      keys['ArrowLeft'] = false; e.preventDefault();
     }, { passive: false });
 
-    rightButton.addEventListener('touchstart', (e) => {
-      keys['ArrowRight'] = true;
-      e.preventDefault();
+    document.getElementById('rightButton').addEventListener('touchstart', e => {
+      keys['ArrowRight'] = true; e.preventDefault();
     }, { passive: false });
-    rightButton.addEventListener('touchend', (e) => {
-      keys['ArrowRight'] = false;
-      e.preventDefault();
+    document.getElementById('rightButton').addEventListener('touchend', e => {
+      keys['ArrowRight'] = false; e.preventDefault();
     }, { passive: false });
 
-    jumpButton.addEventListener('touchstart', (e) => {
-      keys['ArrowUp'] = true;
-      e.preventDefault();
+    document.getElementById('jumpButton').addEventListener('touchstart', e => {
+      keys['ArrowUp'] = true; e.preventDefault();
     }, { passive: false });
-    jumpButton.addEventListener('touchend', (e) => {
-      keys['ArrowUp'] = false;
-      e.preventDefault();
+    document.getElementById('jumpButton').addEventListener('touchend', e => {
+      keys['ArrowUp'] = false; e.preventDefault();
     }, { passive: false });
 
-    // Instructions button event listeners
-    const instructionsButton = document.getElementById('instructionsButton');
-    const backButton = document.getElementById('backButton');
-    instructionsButton.addEventListener('click', showInstructions);
-    instructionsButton.addEventListener('touchstart', (e) => { 
-      e.preventDefault();
-      showInstructions();
-    }, { passive: false });
-    backButton.addEventListener('click', hideInstructions);
-    backButton.addEventListener('touchstart', (e) => { 
-      e.preventDefault();
-      hideInstructions();
-    }, { passive: false });
-
-    function showInstructions() {
-      const message = document.getElementById('message');
-      message.innerHTML =
-        "Instructions:<br><br>" +
-        "• Use arrow keys or on-screen buttons to move left/right and jump.<br>" +
-        "• Avoid barrels and reach the princess to advance levels.<br>" +
-        "• Your time (in seconds) is recorded as your score.<br>" +
-        "• Complete level 5 to win.<br>" +
-        "• After each level (except level 5), the game pauses briefly before starting the next level.";
-      // Hide the Start and Instructions buttons; show Back button
-      document.getElementById('startButton').style.display = "none";
-      instructionsButton.style.display = "none";
-      backButton.style.display = "block";
-    }
-
-    function hideInstructions() {
-      const message = document.getElementById('message');
-      message.textContent = "Donkey Kong-Inspired Game";
-      // Restore the Start and Instructions buttons; hide Back button
-      document.getElementById('startButton').style.display = "block";
-      instructionsButton.style.display = "block";
-      backButton.style.display = "none";
-    }
-
-    // Update positions for player and barrels
     function update() {
-      // Player movement
-      if (keys['ArrowRight'] || keys['d']) {
-        player.dx = player.speed;
-      } else if (keys['ArrowLeft'] || keys['a']) {
-        player.dx = -player.speed;
-      } else {
-        player.dx = 0;
-      }
+      if (keys['ArrowRight']) player.dx = player.speed;
+      else if (keys['ArrowLeft']) player.dx = -player.speed;
+      else player.dx = 0;
 
-      // Player jump
-      if ((keys['ArrowUp'] || keys['w'] || keys[' ']) && !player.jumping) {
+      if ((keys['ArrowUp'] || keys[' ']) && !player.jumping) {
         player.dy = -10;
         player.jumping = true;
       }
 
-      // Apply gravity and update player position
       player.dy += gravity;
       player.x += player.dx;
       player.y += player.dy;
 
-      // Collision: player with platforms
-      platforms.forEach(platform => {
-        if (player.x < platform.x + platform.width &&
-            player.x + player.width > platform.x &&
-            player.y < platform.y + platform.height &&
-            player.y + player.height > platform.y) {
-          if (player.dy > 0) {
-            player.y = platform.y - player.height;
-            player.dy = 0;
-            player.jumping = false;
-          }
+      platforms.forEach(p => {
+        if (player.x < p.x + p.width && player.x + player.width > p.x &&
+            player.y < p.y + p.height && player.y + player.height > p.y &&
+            player.dy > 0) {
+          player.y = p.y - player.height;
+          player.dy = 0;
+          player.jumping = false;
         }
       });
 
-      // Player boundaries
       if (player.x < 0) player.x = 0;
       if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
       if (player.y + player.height > canvas.height) {
@@ -273,88 +196,65 @@
         player.jumping = false;
       }
 
-      // Update barrels
-      barrels.forEach(barrel => {
-        barrel.dy += gravity;
-        barrel.x += barrel.dx;
-        barrel.y += barrel.dy;
+      barrels.forEach(b => {
+        b.dy += gravity;
+        b.x += b.dx;
+        b.y += b.dy;
 
-        let onPlatform = false;
-        platforms.forEach(platform => {
-          if (barrel.x > platform.x && barrel.x < platform.x + platform.width &&
-              barrel.y + barrel.radius > platform.y &&
-              barrel.y - barrel.radius < platform.y + platform.height &&
-              barrel.dy > 0) {
-            barrel.y = platform.y - barrel.radius;
-            barrel.dy = 0;
-            onPlatform = true;
+        platforms.forEach(p => {
+          if (b.x > p.x && b.x < p.x + p.width &&
+              b.y + b.radius > p.y && b.y - b.radius < p.y + p.height &&
+              b.dy > 0) {
+            b.y = p.y - b.radius;
+            b.dy = 0;
+            if (b.dx === 0) b.dx = Math.random() < 0.5 ? -2 : 2;
           }
         });
-        if (onPlatform && barrel.dx === 0) {
-          barrel.dx = Math.random() < 0.5 ? -2 : 2;
-        }
       });
 
-      // Remove barrels that fall off screen
       for (let i = barrels.length - 1; i >= 0; i--) {
-        if (barrels[i].y - barrels[i].radius > canvas.height) {
-          barrels.splice(i, 1);
-        }
+        if (barrels[i].y > canvas.height + 50) barrels.splice(i, 1);
       }
     }
 
-    // Check collisions between player, barrels, and princess
     function checkCollisions() {
-      // Collision: player with barrels
-      for (let barrel of barrels) {
-        const distX = Math.abs(barrel.x - (player.x + player.width / 2));
-        const distY = Math.abs(barrel.y - (player.y + player.height / 2));
-        if (distX <= barrel.radius + player.width / 2 &&
-            distY <= barrel.radius + player.height / 2) {
+      for (const b of barrels) {
+        const dx = Math.abs(b.x - (player.x + player.width / 2));
+        const dy = Math.abs(b.y - (player.y + player.height / 2));
+        if (dx <= b.radius + player.width / 2 && dy <= b.radius + player.height / 2) {
           endGame("gameover");
           return;
         }
       }
-      // Collision: player with princess
+
       if (player.x < princess.x + princess.width &&
           player.x + player.width > princess.x &&
           player.y < princess.y + princess.height &&
           player.y + player.height > princess.y) {
-        if (level < 5) {
-          pauseForLevelUp();
-        } else {
-          endGame("win");
-        }
+        if (level < 5) pauseForLevelUp();
+        else endGame("win");
       }
     }
 
-    // Draw game objects and HUD
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw platforms
       ctx.fillStyle = '#654321';
-      platforms.forEach(platform => {
-        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
-      });
+      platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
 
-      // Draw player (red square)
       ctx.fillStyle = '#FF0000';
       ctx.fillRect(player.x, player.y, player.width, player.height);
 
-      // Draw barrels (brown circles)
       ctx.fillStyle = '#964B00';
-      barrels.forEach(barrel => {
+      barrels.forEach(b => {
         ctx.beginPath();
-        ctx.arc(barrel.x, barrel.y, barrel.radius, 0, Math.PI * 2);
+        ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
         ctx.fill();
       });
 
-      // Draw princess (pink rectangle)
       ctx.fillStyle = '#FF69B4';
       ctx.fillRect(princess.x, princess.y, princess.width, princess.height);
 
-      // Draw HUD (level & time)
       ctx.fillStyle = 'white';
       ctx.font = '20px sans-serif';
       ctx.fillText("Level: " + level, 20, 30);
@@ -364,7 +264,6 @@
       }
     }
 
-    // Main game loop
     function gameLoop() {
       if (gameState === "playing") {
         update();
@@ -376,108 +275,95 @@
       }
     }
 
-    // Spawn a barrel from the upper platform
     function spawnBarrel() {
       if (gameState !== "playing") return;
-      const spawnX = platforms[2].x + 10;
-      const spawnY = platforms[2].y - 20;
-      const newBarrel = {
-        x: spawnX,
-        y: spawnY,
-        radius: 15,
-        dx: 0,
-        dy: 0
-      };
-      barrels.push(newBarrel);
+      const x = platforms[2].x + 10;
+      const y = platforms[2].y - 20;
+      barrels.push({ x, y, radius: 15, dx: 0, dy: 0 });
     }
 
-    // Pause the game for a level-up transition
     function pauseForLevelUp() {
       gameState = "paused";
-      const pauseDuration = 3000; // 3 seconds pause
-      const overlay = document.getElementById('overlay');
-      const message = document.getElementById('message');
-      // Hide the Start Game button during level transition
-      document.getElementById('startButton').style.display = "none";
-      message.textContent = "Level " + level + " Completed! Starting Level " + (level + 1) + "...";
+      message.textContent = `Level ${level} Completed! Starting Level ${level + 1}...`;
+      startButton.style.display = "none";
+      instructionsButton.style.display = "none";
+      backButton.style.display = "none";
       overlay.style.display = "flex";
-      
       setTimeout(() => {
-        // Adjust timer so pause time isn't counted
-        startTime += pauseDuration;
+        startTime += 3000;
         level++;
-        // Reset player and clear barrels
-        player.x = 50;
-        player.y = canvas.height - 100;
-        player.dx = 0;
-        player.dy = 0;
-        player.jumping = false;
         barrels.length = 0;
-        // Adjust barrel spawn rate (min delay 1000ms)
+        Object.assign(player, { x: 50, y: canvas.height - 100, dx: 0, dy: 0, jumping: false });
         clearInterval(spawnInterval);
-        const newDelay = Math.max(1000, 3000 - (level - 1) * 500);
-        spawnInterval = setInterval(spawnBarrel, newDelay);
+        const delay = Math.max(1000, 3000 - (level - 1) * 500);
+        spawnInterval = setInterval(spawnBarrel, delay);
         overlay.style.display = "none";
         gameState = "playing";
         gameLoop();
-      }, pauseDuration);
+      }, 3000);
     }
 
-    // End game and show final score
     function endGame(state) {
       gameState = state;
       clearInterval(spawnInterval);
-      const overlay = document.getElementById('overlay');
-      const message = document.getElementById('message');
-      const finalScore = Math.floor((Date.now() - startTime) / 1000);
-      if (state === "gameover") {
-        message.textContent = "Game Over! Score: " + finalScore + "s";
-      } else if (state === "win") {
-        message.textContent = "You Win! Score: " + finalScore + "s";
-      }
-      // Show the Start Game button for a new game restart
-      document.getElementById('startButton').style.display = "block";
+      const score = Math.floor((Date.now() - startTime) / 1000);
+      message.textContent = state === "win" ? `You Win! Score: ${score}s` : `Game Over! Score: ${score}s`;
+      startButton.style.display = "block";
+      instructionsButton.style.display = "block";
+      backButton.style.display = "none";
       overlay.style.display = "flex";
     }
 
-    // Reset the game for a new start
     function resetGame() {
       level = 1;
       startTime = Date.now();
-      player.x = 50;
-      player.y = canvas.height - 100;
-      player.dx = 0;
-      player.dy = 0;
-      player.jumping = false;
       barrels.length = 0;
+      Object.assign(player, { x: 50, y: canvas.height - 100, dx: 0, dy: 0, jumping: false });
       gameState = "playing";
-      const overlay = document.getElementById('overlay');
       overlay.style.display = "none";
-      // Ensure the Start and Instructions buttons are visible on a fresh start
-      document.getElementById('startButton').style.display = "block";
-      instructionsButton.style.display = "block";
-      backButton.style.display = "none";
       spawnInterval = setInterval(spawnBarrel, 3000);
       gameLoop();
     }
 
-    // Start game on overlay button tap/click
-    const startButton = document.getElementById('startButton');
-    const overlay = document.getElementById('overlay');
     startButton.addEventListener('click', resetGame);
-    startButton.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      resetGame();
-    }, { passive: false });
-    
-    // Allow restart on overlay tap for win/gameover
-    overlay.addEventListener('click', () => {
-      if (gameState !== "playing") resetGame();
+    startButton.addEventListener('touchstart', e => { e.preventDefault(); resetGame(); }, { passive: false });
+
+    // Fixed: Only start game if background (not button) is clicked
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay && gameState !== "playing") resetGame();
     });
-    overlay.addEventListener('touchstart', (e) => { 
-      if (gameState !== "playing") resetGame();
-      e.preventDefault();
+    overlay.addEventListener('touchstart', (e) => {
+      if (e.target === overlay && gameState !== "playing") {
+        resetGame();
+        e.preventDefault();
+      }
     }, { passive: false });
+
+    instructionsButton.addEventListener('click', showInstructions);
+    backButton.addEventListener('click', hideInstructions);
+    instructionsButton.addEventListener('touchstart', e => { e.preventDefault(); showInstructions(); }, { passive: false });
+    backButton.addEventListener('touchstart', e => { e.preventDefault(); hideInstructions(); }, { passive: false });
+
+    function showInstructions() {
+      message.innerHTML = `
+        <b>How to Play:</b><br><br>
+        • Use arrow keys or screen buttons to move.<br>
+        • Avoid barrels.<br>
+        • Reach the princess to level up.<br>
+        • Complete level 5 to win.<br>
+        • Your score is based on time.<br><br>
+      `;
+      startButton.style.display = "none";
+      instructionsButton.style.display = "none";
+      backButton.style.display = "block";
+    }
+
+    function hideInstructions() {
+      message.textContent = "Donkey Kong-Inspired Game";
+      startButton.style.display = "block";
+      instructionsButton.style.display = "block";
+      backButton.style.display = "none";
+    }
   </script>
 </body>
 </html>
