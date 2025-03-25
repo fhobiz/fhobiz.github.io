@@ -32,7 +32,7 @@
   <canvas id="gameCanvas"></canvas>
 
   <div id="overlay">
-    <div id="message">Donkey Kong-Inspired Game v4.2</div>
+    <div id="message">Donkey Kong-Inspired Game v4.3</div>
     <button id="startButton">Start Game</button>
     <button id="instructionsButton">Instructions</button>
     <button id="backButton" style="display:none;">Back</button>
@@ -164,15 +164,28 @@
           player.y < princess.y + princess.height &&
           player.y + player.height > princess.y) {
         if (level < 5) {
-          pauseForLevelUp();
-        } else {
-          gameState = "paused"; // Freeze game
-          barrelSound.currentTime = 0;
-          barrelSound.play();
-          setTimeout(() => {
-            endGame("win");
-          }, 2400); // Delay to let win sound play
-        }
+  pauseForLevelUp();
+} else {
+  gameState = "paused"; // pause game loop
+  // stop all other sounds from interfering
+  stepSound.pause();
+  jumpSound.pause();
+  crashSound.pause();
+  barrelSound.pause();
+
+  // reset and play win sound
+  winSound.currentTime = 0;
+  winSound.play().then(() => {
+    console.log("Win sound started");
+    // Delay until win sound finishes (or 2s fallback)
+    setTimeout(() => {
+      endGame("win");
+    }, 2000);
+  }).catch(err => {
+    console.log("Could not play win sound:", err);
+    endGame("win");
+  });
+}
       }
     }
 
