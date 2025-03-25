@@ -32,7 +32,7 @@
   <canvas id="gameCanvas"></canvas>
 
   <div id="overlay">
-    <div id="message">Donkey Kong-Inspired Game (v3.1)</div>
+    <div id="message">Donkey Kong-Inspired Game v4</div>
     <button id="startButton">Start Game</button>
     <button id="instructionsButton">Instructions</button>
     <button id="backButton" style="display:none;">Back</button>
@@ -48,14 +48,14 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // UI Elements
+    // UI elements
     const overlay = document.getElementById('overlay');
     const message = document.getElementById('message');
     const startButton = document.getElementById('startButton');
     const instructionsButton = document.getElementById('instructionsButton');
     const backButton = document.getElementById('backButton');
 
-    // Sounds
+    // Sound effects
     const jumpSound = new Audio('sound/jump.mp3');
     const stepSound = new Audio('sound/step.mp3');
     const barrelSound = new Audio('sound/barrel.mp3');
@@ -81,11 +81,9 @@
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-
       platforms[0] = { x: 0, y: canvas.height - 60, width: canvas.width, height: 20 };
       platforms[1].x = canvas.width / 4; platforms[1].y = canvas.height - 150;
       platforms[2].x = canvas.width / 2; platforms[2].y = canvas.height - 250;
-
       player.y = canvas.height - 100;
       princess.x = canvas.width - 250;
       princess.y = canvas.height - 350;
@@ -97,7 +95,6 @@
     document.addEventListener('keydown', e => keys[e.key] = true);
     document.addEventListener('keyup', e => keys[e.key] = false);
 
-    // Touch controls
     const mapTouch = (btn, key) => {
       btn.addEventListener('touchstart', e => { keys[key] = true; e.preventDefault(); }, { passive: false });
       btn.addEventListener('touchend', e => { keys[key] = false; e.preventDefault(); }, { passive: false });
@@ -107,13 +104,13 @@
     mapTouch(document.getElementById('jumpButton'), 'ArrowUp');
 
     function update() {
-      // Movement
       if (keys['ArrowRight']) { player.dx = player.speed; stepSound.play(); }
       else if (keys['ArrowLeft']) { player.dx = -player.speed; stepSound.play(); }
       else player.dx = 0;
 
       if ((keys['ArrowUp'] || keys[' ']) && !player.jumping) {
-        player.dy = -10; player.jumping = true;
+        player.dy = -10;
+        player.jumping = true;
         jumpSound.currentTime = 0; jumpSound.play();
       }
 
@@ -125,15 +122,14 @@
         if (player.x < p.x + p.width && player.x + player.width > p.x &&
             player.y < p.y + p.height && player.y + player.height > p.y && player.dy > 0) {
           player.y = p.y - player.height;
-          player.dy = 0; player.jumping = false;
+          player.dy = 0;
+          player.jumping = false;
         }
       });
 
-      // Boundaries
       if (player.x < 0) player.x = 0;
       if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
 
-      // Barrels
       barrels.forEach(b => {
         b.dy += gravity;
         b.x += b.dx;
@@ -141,7 +137,8 @@
         platforms.forEach(p => {
           if (b.x > p.x && b.x < p.x + p.width &&
               b.y + b.radius > p.y && b.y - b.radius < p.y + p.height && b.dy > 0) {
-            b.y = p.y - b.radius; b.dy = 0;
+            b.y = p.y - b.radius;
+            b.dy = 0;
             if (b.dx === 0) b.dx = Math.random() < 0.5 ? -2 : 2;
           }
         });
@@ -167,17 +164,15 @@
           player.y < princess.y + princess.height &&
           player.y + player.height > princess.y) {
         if (level < 5) {
-  pauseForLevelUp();
-      } else {
-          gameState = "paused"; // freeze game updates
+          pauseForLevelUp();
+        } else {
+          gameState = "paused"; // Freeze game
           winSound.currentTime = 0;
           winSound.play();
-
           setTimeout(() => {
-          endGame("win");
-            }, 1200); // Wait 1.2 seconds before showing win screen
-            }
-
+            endGame("win");
+          }, 1200); // Delay to let win sound play
+        }
       }
     }
 
