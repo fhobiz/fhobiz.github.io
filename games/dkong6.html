@@ -32,7 +32,7 @@
   <canvas id="gameCanvas"></canvas>
 
   <div id="overlay">
-    <div id="message">Donkey Kong-Inspired Game v4.3</div>
+    <div id="message">Donkey Kong-Inspired Game v4.4</div>
     <button id="startButton">Start Game</button>
     <button id="instructionsButton">Instructions</button>
     <button id="backButton" style="display:none;">Back</button>
@@ -180,7 +180,7 @@
     // Delay until win sound finishes (or 2s fallback)
     setTimeout(() => {
       endGame("win");
-    }, 2000);
+    }, 20000);
   }).catch(err => {
     console.log("Could not play win sound:", err);
     endGame("win");
