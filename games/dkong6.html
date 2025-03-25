@@ -32,7 +32,7 @@
   <canvas id="gameCanvas"></canvas>
 
   <div id="overlay">
-    <div id="message">Donkey Kong-Inspired Game (v2)</div>
+    <div id="message">Donkey Kong-Inspired Game (v3)</div>
     <button id="startButton">Start Game</button>
     <button id="instructionsButton">Instructions</button>
     <button id="backButton" style="display:none;">Back</button>
@@ -56,11 +56,11 @@
     const backButton = document.getElementById('backButton');
 
     // Sounds
-    const jumpSound = new Audio('sounds/jump.mp3');
-    const stepSound = new Audio('sounds/step.mp3');
-    const barrelSound = new Audio('sounds/barrel.mp3');
-    const crashSound = new Audio('sounds/crash.mp3');
-    const winSound = new Audio('sounds/win.mp3');
+    const jumpSound = new Audio('sound/jump.mp3');
+    const stepSound = new Audio('sound/step.mp3');
+    const barrelSound = new Audio('sound/barrel.mp3');
+    const crashSound = new Audio('sound/crash.mp3');
+    const winSound = new Audio('sound/win.mp3');
 
     let gameState = "start";
     let spawnInterval;
