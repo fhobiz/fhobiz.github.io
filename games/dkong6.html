@@ -168,15 +168,15 @@
           player.y + player.height > princess.y) {
         if (level < 5) {
   pauseForLevelUp();
-} else {
-  gameState = "paused"; // freeze game updates
-  winSound.currentTime = 0;
-  winSound.play();
+      } else {
+          gameState = "paused"; // freeze game updates
+          winSound.currentTime = 0;
+          winSound.play();
 
-  setTimeout(() => {
-    endGame("win");
-  }, 1200); // Wait 1.2 seconds before showing win screen
-}
+          setTimeout(() => {
+          endGame("win");
+            }, 1200); // Wait 1.2 seconds before showing win screen
+            }
 
       }
     }
