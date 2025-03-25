@@ -5,79 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Donkey Kong-Inspired Game</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: #000;
-      height: 100%;
-    }
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      background: #111;
-    }
+    html, body { margin: 0; padding: 0; overflow: hidden; background: #000; height: 100%; }
+    canvas { position: absolute; top: 0; left: 0; background: #111; }
     #overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 20;
-      color: #fff;
-      font-size: 24px;
-      text-align: center;
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.8); display: flex; flex-direction: column;
+      justify-content: center; align-items: center; z-index: 20;
+      color: #fff; font-size: 24px; text-align: center;
     }
     #overlay button {
-      margin-top: 20px;
-      font-size: 24px;
-      padding: 15px 30px;
-      border: none;
-      border-radius: 10px;
-      background-color: #444;
-      color: #fff;
+      margin-top: 20px; font-size: 24px; padding: 15px 30px;
+      border: none; border-radius: 10px; background-color: #444; color: #fff;
     }
     #controls {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 20px;
-      z-index: 10;
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 20px; z-index: 10;
     }
     #controls button {
-      font-size: 18px;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      background-color: #444;
-      color: #fff;
-      opacity: 0.8;
+      font-size: 18px; padding: 10px 20px; border: none;
+      border-radius: 5px; background-color: #444; color: #fff; opacity: 0.8;
     }
-    #controls button:active {
-      opacity: 1;
-    }
+    #controls button:active { opacity: 1; }
   </style>
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
 
-  <!-- Overlay -->
   <div id="overlay">
     <div id="message">Donkey Kong-Inspired Game</div>
     <button id="startButton">Start Game</button>
     <button id="instructionsButton">Instructions</button>
-    <button id="backButton" style="display: none;">Back</button>
+    <button id="backButton" style="display:none;">Back</button>
   </div>
 
-  <!-- On-screen controls -->
   <div id="controls">
     <button id="leftButton">Left</button>
     <button id="jumpButton">Jump</button>
@@ -88,11 +48,19 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
+    // UI Elements
     const overlay = document.getElementById('overlay');
     const message = document.getElementById('message');
     const startButton = document.getElementById('startButton');
     const instructionsButton = document.getElementById('instructionsButton');
     const backButton = document.getElementById('backButton');
+
+    // Sounds
+    const jumpSound = new Audio('sounds/jump.mp3');
+    const stepSound = new Audio('sounds/step.mp3');
+    const barrelSound = new Audio('sounds/barrel.mp3');
+    const crashSound = new Audio('sounds/crash.mp3');
+    const winSound = new Audio('sounds/win.mp3');
 
     let gameState = "start";
     let spawnInterval;
@@ -100,11 +68,7 @@
     let startTime = 0;
     const barrels = [];
 
-    const player = {
-      x: 50, y: 0, width: 40, height: 40,
-      dx: 0, dy: 0, speed: 5, jumping: false
-    };
-
+    const player = { x: 50, y: 0, width: 40, height: 40, dx: 0, dy: 0, speed: 5, jumping: false };
     const gravity = 0.5;
 
     const platforms = [
@@ -112,25 +76,17 @@
       { x: 0, y: 0, width: 150, height: 20 },
       { x: 0, y: 0, width: 150, height: 20 }
     ];
-
     const princess = { x: 0, y: 0, width: 40, height: 60 };
 
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      platforms[0].x = 0;
-      platforms[0].y = canvas.height - 60;
-      platforms[0].width = canvas.width;
-
-      platforms[1].x = canvas.width / 4;
-      platforms[1].y = canvas.height - 150;
-
-      platforms[2].x = canvas.width / 2;
-      platforms[2].y = canvas.height - 250;
+      platforms[0] = { x: 0, y: canvas.height - 60, width: canvas.width, height: 20 };
+      platforms[1].x = canvas.width / 4; platforms[1].y = canvas.height - 150;
+      platforms[2].x = canvas.width / 2; platforms[2].y = canvas.height - 250;
 
       player.y = canvas.height - 100;
-
       princess.x = canvas.width - 250;
       princess.y = canvas.height - 350;
     }
@@ -142,35 +98,23 @@
     document.addEventListener('keyup', e => keys[e.key] = false);
 
     // Touch controls
-    document.getElementById('leftButton').addEventListener('touchstart', e => {
-      keys['ArrowLeft'] = true; e.preventDefault();
-    }, { passive: false });
-    document.getElementById('leftButton').addEventListener('touchend', e => {
-      keys['ArrowLeft'] = false; e.preventDefault();
-    }, { passive: false });
-
-    document.getElementById('rightButton').addEventListener('touchstart', e => {
-      keys['ArrowRight'] = true; e.preventDefault();
-    }, { passive: false });
-    document.getElementById('rightButton').addEventListener('touchend', e => {
-      keys['ArrowRight'] = false; e.preventDefault();
-    }, { passive: false });
-
-    document.getElementById('jumpButton').addEventListener('touchstart', e => {
-      keys['ArrowUp'] = true; e.preventDefault();
-    }, { passive: false });
-    document.getElementById('jumpButton').addEventListener('touchend', e => {
-      keys['ArrowUp'] = false; e.preventDefault();
-    }, { passive: false });
+    const mapTouch = (btn, key) => {
+      btn.addEventListener('touchstart', e => { keys[key] = true; e.preventDefault(); }, { passive: false });
+      btn.addEventListener('touchend', e => { keys[key] = false; e.preventDefault(); }, { passive: false });
+    };
+    mapTouch(document.getElementById('leftButton'), 'ArrowLeft');
+    mapTouch(document.getElementById('rightButton'), 'ArrowRight');
+    mapTouch(document.getElementById('jumpButton'), 'ArrowUp');
 
     function update() {
-      if (keys['ArrowRight']) player.dx = player.speed;
-      else if (keys['ArrowLeft']) player.dx = -player.speed;
+      // Movement
+      if (keys['ArrowRight']) { player.dx = player.speed; stepSound.play(); }
+      else if (keys['ArrowLeft']) { player.dx = -player.speed; stepSound.play(); }
       else player.dx = 0;
 
       if ((keys['ArrowUp'] || keys[' ']) && !player.jumping) {
-        player.dy = -10;
-        player.jumping = true;
+        player.dy = -10; player.jumping = true;
+        jumpSound.currentTime = 0; jumpSound.play();
       }
 
       player.dy += gravity;
@@ -179,38 +123,29 @@
 
       platforms.forEach(p => {
         if (player.x < p.x + p.width && player.x + player.width > p.x &&
-            player.y < p.y + p.height && player.y + player.height > p.y &&
-            player.dy > 0) {
+            player.y < p.y + p.height && player.y + player.height > p.y && player.dy > 0) {
           player.y = p.y - player.height;
-          player.dy = 0;
-          player.jumping = false;
+          player.dy = 0; player.jumping = false;
         }
       });
 
+      // Boundaries
       if (player.x < 0) player.x = 0;
       if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-      if (player.y + player.height > canvas.height) {
-        player.y = canvas.height - player.height;
-        player.dy = 0;
-        player.jumping = false;
-      }
 
+      // Barrels
       barrels.forEach(b => {
         b.dy += gravity;
         b.x += b.dx;
         b.y += b.dy;
-
         platforms.forEach(p => {
           if (b.x > p.x && b.x < p.x + p.width &&
-              b.y + b.radius > p.y && b.y - b.radius < p.y + p.height &&
-              b.dy > 0) {
-            b.y = p.y - b.radius;
-            b.dy = 0;
+              b.y + b.radius > p.y && b.y - b.radius < p.y + p.height && b.dy > 0) {
+            b.y = p.y - b.radius; b.dy = 0;
             if (b.dx === 0) b.dx = Math.random() < 0.5 ? -2 : 2;
           }
         });
       });
-
       for (let i = barrels.length - 1; i >= 0; i--) {
         if (barrels[i].y > canvas.height + 50) barrels.splice(i, 1);
       }
@@ -221,6 +156,7 @@
         const dx = Math.abs(b.x - (player.x + player.width / 2));
         const dy = Math.abs(b.y - (player.y + player.height / 2));
         if (dx <= b.radius + player.width / 2 && dy <= b.radius + player.height / 2) {
+          crashSound.play();
           endGame("gameover");
           return;
         }
@@ -231,70 +167,51 @@
           player.y < princess.y + princess.height &&
           player.y + player.height > princess.y) {
         if (level < 5) pauseForLevelUp();
-        else endGame("win");
+        else {
+          winSound.play();
+          endGame("win");
+        }
       }
     }
 
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = '#654321';
-      platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
-
-      ctx.fillStyle = '#FF0000';
-      ctx.fillRect(player.x, player.y, player.width, player.height);
-
+      ctx.fillStyle = '#654321'; platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
+      ctx.fillStyle = '#FF0000'; ctx.fillRect(player.x, player.y, player.width, player.height);
       ctx.fillStyle = '#964B00';
-      barrels.forEach(b => {
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      ctx.fillStyle = '#FF69B4';
-      ctx.fillRect(princess.x, princess.y, princess.width, princess.height);
-
-      ctx.fillStyle = 'white';
-      ctx.font = '20px sans-serif';
+      barrels.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2); ctx.fill(); });
+      ctx.fillStyle = '#FF69B4'; ctx.fillRect(princess.x, princess.y, princess.width, princess.height);
+      ctx.fillStyle = 'white'; ctx.font = '20px sans-serif';
       ctx.fillText("Level: " + level, 20, 30);
-      if (startTime) {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        ctx.fillText("Time: " + elapsed + "s", 20, 60);
-      }
+      if (startTime) ctx.fillText("Time: " + Math.floor((Date.now() - startTime) / 1000) + "s", 20, 60);
     }
 
     function gameLoop() {
       if (gameState === "playing") {
-        update();
-        checkCollisions();
-        draw();
+        update(); checkCollisions(); draw();
         requestAnimationFrame(gameLoop);
-      } else {
-        draw();
-      }
+      } else draw();
     }
 
     function spawnBarrel() {
       if (gameState !== "playing") return;
-      const x = platforms[2].x + 10;
-      const y = platforms[2].y - 20;
-      barrels.push({ x, y, radius: 15, dx: 0, dy: 0 });
+      barrelSound.currentTime = 0; barrelSound.play();
+      barrels.push({ x: platforms[2].x + 10, y: platforms[2].y - 20, radius: 15, dx: 0, dy: 0 });
     }
 
     function pauseForLevelUp() {
       gameState = "paused";
-      message.textContent = `Level ${level} Completed! Starting Level ${level + 1}...`;
+      message.textContent = `Level ${level} Complete! Starting Level ${level + 1}...`;
+      overlay.style.display = "flex";
       startButton.style.display = "none";
       instructionsButton.style.display = "none";
       backButton.style.display = "none";
-      overlay.style.display = "flex";
       setTimeout(() => {
-        startTime += 3000;
-        level++;
+        level++; startTime += 3000;
         barrels.length = 0;
         Object.assign(player, { x: 50, y: canvas.height - 100, dx: 0, dy: 0, jumping: false });
-        clearInterval(spawnInterval);
         const delay = Math.max(1000, 3000 - (level - 1) * 500);
+        clearInterval(spawnInterval);
         spawnInterval = setInterval(spawnBarrel, delay);
         overlay.style.display = "none";
         gameState = "playing";
@@ -306,7 +223,7 @@
       gameState = state;
       clearInterval(spawnInterval);
       const score = Math.floor((Date.now() - startTime) / 1000);
-      message.textContent = state === "win" ? `You Win! Score: ${score}s` : `Game Over! Score: ${score}s`;
+      message.textContent = (state === "win" ? "You Win!" : "Game Over!") + ` Score: ${score}s`;
       startButton.style.display = "block";
       instructionsButton.style.display = "block";
       backButton.style.display = "none";
@@ -325,45 +242,29 @@
     }
 
     startButton.addEventListener('click', resetGame);
-    startButton.addEventListener('touchstart', e => { e.preventDefault(); resetGame(); }, { passive: false });
-
-    // Fixed: Only start game if background (not button) is clicked
-    overlay.addEventListener('click', (e) => {
+    overlay.addEventListener('click', e => {
       if (e.target === overlay && gameState !== "playing") resetGame();
     });
-    overlay.addEventListener('touchstart', (e) => {
-      if (e.target === overlay && gameState !== "playing") {
-        resetGame();
-        e.preventDefault();
-      }
-    }, { passive: false });
 
-    instructionsButton.addEventListener('click', showInstructions);
-    backButton.addEventListener('click', hideInstructions);
-    instructionsButton.addEventListener('touchstart', e => { e.preventDefault(); showInstructions(); }, { passive: false });
-    backButton.addEventListener('touchstart', e => { e.preventDefault(); hideInstructions(); }, { passive: false });
-
-    function showInstructions() {
+    instructionsButton.addEventListener('click', () => {
       message.innerHTML = `
         <b>How to Play:</b><br><br>
         • Use arrow keys or screen buttons to move.<br>
         • Avoid barrels.<br>
-        • Reach the princess (pink) to level up.<br>
-        • Game will move to next level automatically.<br>
+        • Reach the princess to level up.<br>
         • Complete level 5 to win.<br>
-        • Your score is based on time.<br><br>
-      `;
+        • Your score is based on time.<br><br>`;
       startButton.style.display = "none";
       instructionsButton.style.display = "none";
       backButton.style.display = "block";
-    }
+    });
 
-    function hideInstructions() {
+    backButton.addEventListener('click', () => {
       message.textContent = "Donkey Kong-Inspired Game";
       startButton.style.display = "block";
       instructionsButton.style.display = "block";
       backButton.style.display = "none";
-    }
+    });
   </script>
 </body>
 </html>
