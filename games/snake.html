@@ -61,9 +61,10 @@
       if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
         return gameOver();
       }
-      // Self collision
-      for (let segment of snake) {
-        if (head.x === segment.x && head.y === segment.y) {
+      
+      // Self collision: start checking from index 1 to skip the head
+      for (let i = 1; i < snake.length; i++) {
+        if (head.x === snake[i].x && head.y === snake[i].y) {
           return gameOver();
         }
       }
