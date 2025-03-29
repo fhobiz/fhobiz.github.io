@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Snake Game</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+      overflow: hidden;
+    }
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 500px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    /* Make canvas responsive while preserving its drawing resolution */
+    canvas {
+      background-color: #222;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      touch-action: none;
+      width: 100%;
+      height: auto;
+      max-width: 320px; /* Keeps the original intended size on larger screens */
+    }
+    .score {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+    .controls {
+      width: 100%;
+      max-width: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 20px;
+    }
+    .difficulty {
+      margin-bottom: 15px;
+      width: 100%;
+    }
+    .difficulty select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 5px;
+      background-color: #4CAF50;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .game-over {
+      position: absolute;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      z-index: 10;
+      text-align: center;
+    }
+    .game-over h2 {
+      margin-top: 0;
+    }
+    .controls-info {
+      margin-top: 15px;
+      color: #666;
+      font-size: 14px;
+      text-align: center;
+    }
+    /* Virtual Keyboard Styles */
+    .virtual-keyboard {
+      display: none;
+      width: 100%;
+      max-width: 200px;
+      margin-top: 20px;
+      user-select: none;
+    }
+    .keyboard-row {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+    .key {
+      width: 60px;
+      height: 60px;
+      background-color: #ddd;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 5px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .key:active {
+      background-color: #bbb;
+      transform: translateY(2px);
+    }
+    .key-arrow {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    /* Media Queries for responsiveness */
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 24px;
+      }
+      .score {
+        font-size: 16px;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 14px;
+      }
+    }
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 20px;
+      }
+      .controls-info p {
+        font-size: 12px;
+      }
+      .key {
+        width: 50px;
+        height: 50px;
+        margin: 0 3px;
+      }
+      .key-arrow {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>Snake Game</h1>
+    <div class="score">Score: <span id="score">0</span></div>
+    <canvas id="gameCanvas" width="320" height="320"></canvas>
+    <div id="gameOver" class="game-over">
+      <h2>Game Over</h2>
+      <p>Your score: <span id="finalScore">0</span></p>
+      <button id="restartButton">Play Again</button>
+    </div>
+    <div class="controls">
+      <div class="difficulty">
+        <select id="difficultySelect">
+          <option value="1">Level 1: Easy</option>
+          <option value="2">Level 2: Medium</option>
+          <option value="3" selected>Level 3: Normal</option>
+          <option value="4">Level 4: Hard</option>
+          <option value="5">Level 5: Expert</option>
+        </select>
+      </div>
+      <div class="buttons">
+        <button id="startButton">Start Game</button>
+        <button id="pauseButton" disabled>Pause</button>
+      </div>
+      <div class="controls-info">
+        <p>Desktop: Arrow keys or WASD</p>
+        <p>Mobile: Use virtual keyboard below</p>
+      </div>
+    </div>
+    
+    <!-- Virtual Keyboard -->
+    <div id="virtualKeyboard" class="virtual-keyboard">
+      <div class="keyboard-row">
+        <div id="upKey" class="key"><span class="key-arrow">↑</span></div>
+      </div>
+      <div class="keyboard-row">
+        <div id="leftKey" class="key"><span class="key-arrow">←</span></div>
+        <div id="downKey" class="key"><span class="key-arrow">↓</span></div>
+        <div id="rightKey" class="key"><span class="key-arrow">→</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Elements
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      const scoreElement = document.getElementById('score');
+      const finalScoreElement = document.getElementById('finalScore');
+      const startButton = document.getElementById('startButton');
+      const pauseButton = document.getElementById('pauseButton');
+      const restartButton = document.getElementById('restartButton');
+      const difficultySelect = document.getElementById('difficultySelect');
+      const gameOverElement = document.getElementById('gameOver');
+      const virtualKeyboard = document.getElementById('virtualKeyboard');
+      
+      // Virtual keyboard keys
+      const upKey = document.getElementById('upKey');
+      const downKey = document.getElementById('downKey');
+      const leftKey = document.getElementById('leftKey');
+      const rightKey = document.getElementById('rightKey');
+
+      // Game settings
+      const tileSize = 16;
+      const gridWidth = canvas.width / tileSize;
+      const gridHeight = canvas.height / tileSize;
+      
+      // Game state
+      let snake = [];
+      let food = {};
+      let direction = "RIGHT";
+      let nextDirection = "RIGHT";
+      let score = 0;
+      let gameRunning = false;
+      let gamePaused = false;
+      let gameLoop;
+      let speedMap = {
+        1: 200, // Easy
+        2: 150, // Medium
+        3: 120, // Normal
+        4: 90,  // Hard
+        5: 60   // Expert
+      };
+
+      // Initialize the game
+      function initGame() {
+        snake = [
+          { x: 10, y: 10 },
+          { x: 9, y: 10 },
+          { x: 8, y: 10 }
+        ];
+        generateFood();
+        direction = "RIGHT";
+        nextDirection = "RIGHT";
+        score = 0;
+        scoreElement.textContent = score;
+        if (gameLoop) clearInterval(gameLoop);
+      }
+
+      // Generate food at random position
+      function generateFood() {
+        let valid = false;
+        while (!valid) {
+          food = {
+            x: Math.floor(Math.random() * gridWidth),
+            y: Math.floor(Math.random() * gridHeight)
+          };
+          valid = !snake.some(segment => segment.x === food.x && segment.y === food.y);
+        }
+      }
+
+      // Draw the game
+      function draw() {
+        ctx.fillStyle = "#222";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        snake.forEach((segment, index) => {
+          ctx.fillStyle = index === 0 ? "#4CAF50" : "#8BC34A";
+          ctx.fillRect(segment.x * tileSize, segment.y * tileSize, tileSize - 1, tileSize - 1);
+        });
+        ctx.fillStyle = "#FF5722";
+        ctx.fillRect(food.x * tileSize, food.y * tileSize, tileSize - 1, tileSize - 1);
+      }
+
+      // Update game state
+      function update() {
+        direction = nextDirection;
+        const head = { x: snake[0].x, y: snake[0].y };
+        switch (direction) {
+          case "UP": head.y--; break;
+          case "DOWN": head.y++; break;
+          case "LEFT": head.x--; break;
+          case "RIGHT": head.x++; break;
+        }
+        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
+          gameOver();
+          return;
+        }
+        if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+          gameOver();
+          return;
+        }
+        snake.unshift(head);
+        if (head.x === food.x && head.y === food.y) {
+          score += 10;
+          scoreElement.textContent = score;
+          generateFood();
+        } else {
+          snake.pop();
+        }
+      }
+
+      function gameOver() {
+        clearInterval(gameLoop);
+        gameRunning = false;
+        finalScoreElement.textContent = score;
+        gameOverElement.style.display = "flex";
+        startButton.textContent = "Start Game";
+        startButton.disabled = false;
+        pauseButton.disabled = true;
+        virtualKeyboard.style.display = "none";
+      }
+
+      function startGame() {
+        if (gameRunning && !gamePaused) return;
+        if (gamePaused) {
+          gamePaused = false;
+          gameLoop = setInterval(gameLoop_fn, speedMap[difficultySelect.value]);
+          pauseButton.textContent = "Pause";
+        } else {
+          initGame();
+          gameRunning = true;
+          gamePaused = false;
+          gameOverElement.style.display = "none";
+          virtualKeyboard.style.display = "block";
+          gameLoop = setInterval(gameLoop_fn, speedMap[difficultySelect.value]);
+        }
+        startButton.textContent = "Restart";
+        pauseButton.disabled = false;
+        canvas.focus();
+      }
+
+      function pauseGame() {
+        if (!gameRunning) return;
+        if (gamePaused) {
+          gamePaused = false;
+          gameLoop = setInterval(gameLoop_fn, speedMap[difficultySelect.value]);
+          pauseButton.textContent = "Pause";
+        } else {
+          gamePaused = true;
+          clearInterval(gameLoop);
+          pauseButton.textContent = "Resume";
+        }
+      }
+
+      function gameLoop_fn() {
+        update();
+        draw();
+      }
+
+      function changeDirection(newDirection) {
+        if (!gameRunning || gamePaused) return;
+        if ((direction === "UP" && newDirection === "DOWN") ||
+            (direction === "DOWN" && newDirection === "UP") ||
+            (direction === "LEFT" && newDirection === "RIGHT") ||
+            (direction === "RIGHT" && newDirection === "LEFT")) {
+          return;
+        }
+        nextDirection = newDirection;
+      }
+
+      startButton.addEventListener('click', startGame);
+      pauseButton.addEventListener('click', pauseGame);
+      restartButton.addEventListener('click', function() {
+        gameOverElement.style.display = "none";
+        startGame();
+      });
+      difficultySelect.addEventListener('change', function() {
+        if (gameRunning && !gamePaused) {
+          clearInterval(gameLoop);
+          gameLoop = setInterval(gameLoop_fn, speedMap[difficultySelect.value]);
+        }
+      });
+
+      document.addEventListener('keydown', function(e) {
+        switch(e.key) {
+          case "ArrowUp":
+          case "w":
+          case "W":
+            changeDirection("UP");
+            break;
+          case "ArrowDown":
+          case "s":
+          case "S":
+            changeDirection("DOWN");
+            break;
+          case "ArrowLeft":
+          case "a":
+          case "A":
+            changeDirection("LEFT");
+            break;
+          case "ArrowRight":
+          case "d":
+          case "D":
+            changeDirection("RIGHT");
+            break;
+          case " ":
+            if (gameRunning) {
+              pauseGame();
+            } else {
+              startGame();
+            }
+            break;
+        }
+        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+          e.preventDefault();
+        }
+      });
+
+      upKey.addEventListener('click', () => changeDirection("UP"));
+      downKey.addEventListener('click', () => changeDirection("DOWN"));
+      leftKey.addEventListener('click', () => changeDirection("LEFT"));
+      rightKey.addEventListener('click', () => changeDirection("RIGHT"));
+
+      upKey.addEventListener('touchstart', function(e) { e.preventDefault(); changeDirection("UP"); });
+      downKey.addEventListener('touchstart', function(e) { e.preventDefault(); changeDirection("DOWN"); });
+      leftKey.addEventListener('touchstart', function(e) { e.preventDefault(); changeDirection("LEFT"); });
+      rightKey.addEventListener('touchstart', function(e) { e.preventDefault(); changeDirection("RIGHT"); });
+
+      canvas.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
+      draw();
+    });
+  </script>
+</body>
+</html>
