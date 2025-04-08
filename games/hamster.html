@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hit the Hamster Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f0e8d0;
+            touch-action: manipulation;
+            user-select: none;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            height: 500px;
+            margin: 20px auto;
+            background-color: #8bc34a;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .hole {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background-color: #3e2723;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        
+        .hamster {
+            position: absolute;
+            bottom: -100%;
+            left: 15px;
+            width: 50px;
+            height: 50px;
+            background-color: #ffb74d;
+            border-radius: 50% 50% 40% 40%;
+            transition: bottom 0.1s;
+            cursor: pointer;
+        }
+        
+        .hamster:before {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #000;
+            border-radius: 50%;
+            top: 10px;
+            left: 10px;
+        }
+        
+        .hamster:after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #000;
+            border-radius: 50%;
+            top: 10px;
+            right: 10px;
+        }
+        
+        .ear-left, .ear-right {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: #e65100;
+            border-radius: 50%;
+            top: -5px;
+        }
+        
+        .ear-left {
+            left: 8px;
+        }
+        
+        .ear-right {
+            right: 8px;
+        }
+        
+        .hamster.active {
+            bottom: 15px;
+        }
+        
+        .hamster.hit {
+            background-color: #ef5350;
+        }
+        
+        #score-container {
+            font-size: 24px;
+            margin: 20px;
+            color: #3e2723;
+        }
+        
+        #timer {
+            font-size: 20px;
+            margin: 10px;
+            color: #3e2723;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        
+        button:hover {
+            background-color: #f57c00;
+        }
+        
+        #level {
+            font-size: 18px;
+            margin: 10px;
+            color: #3e2723;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hit the Hamster!</h1>
+    <div id="score-container">Score: <span id="score">0</span></div>
+    <div id="timer">Time: <span id="time">30</span>s</div>
+    <div id="level">Level: <span id="level-value">1</span></div>
+    <div id="game-container"></div>
+    <button id="start-button">Start Game</button>
+    
+    <script>
+        // Game variables
+        let score = 0;
+        let timer = 30;
+        let gameInterval;
+        let hamsterInterval;
+        let gameActive = false;
+        let level = 1;
+        let minHamsterInterval = 1000;
+        let maxHamsterInterval = 2000;
+        
+        // DOM elements
+        const gameContainer = document.getElementById('game-container');
+        const scoreElement = document.getElementById('score');
+        const timeElement = document.getElementById('time');
+        const levelElement = document.getElementById('level-value');
+        const startButton = document.getElementById('start-button');
+        
+        // Create holes
+        function createHoles() {
+            const holePositions = [
+                {left: '10%', top: '20%'},
+                {left: '50%', top: '20%'},
+                {left: '80%', top: '20%'},
+                {left: '20%', top: '50%'},
+                {left: '60%', top: '50%'},
+                {left: '10%', top: '80%'},
+                {left: '50%', top: '80%'},
+                {left: '80%', top: '80%'}
+            ];
+            
+            holePositions.forEach((position, index) => {
+                const hole = document.createElement('div');
+                hole.className = 'hole';
+                hole.style.left = position.left;
+                hole.style.top = position.top;
+                hole.style.transform = 'translate(-50%, -50%)';
+                
+                const hamster = document.createElement('div');
+                hamster.className = 'hamster';
+                hamster.id = `hamster-${index}`;
+                hamster.addEventListener('click', hitHamster);
+                hamster.addEventListener('touchstart', hitHamster, {passive: true});
+                
+                const earLeft = document.createElement('div');
+                earLeft.className = 'ear-left';
+                
+                const earRight = document.createElement('div');
+                earRight.className = 'ear-right';
+                
+                hamster.appendChild(earLeft);
+                hamster.appendChild(earRight);
+                hole.appendChild(hamster);
+                gameContainer.appendChild(hole);
+            });
+        }
+        
+        // Start the game
+        function startGame() {
+            if (gameActive) return;
+            
+            // Reset game state
+            score = 0;
+            timer = 30;
+            level = 1;
+            gameActive = true;
+            
+            // Update UI
+            scoreElement.textContent = score;
+            timeElement.textContent = timer;
+            levelElement.textContent = level;
+            startButton.textContent = 'Game in Progress';
+            startButton.disabled = true;
+            
+            // Start timers
+            gameInterval = setInterval(updateGame, 1000);
+            scheduleNextHamster();
+        }
+        
+        // Update game state
+        function updateGame() {
+            timer--;
+            timeElement.textContent = timer;
+            
+            if (timer <= 0) {
+                endGame();
+            }
+        }
+        
+        // End the game
+        function endGame() {
+            clearInterval(gameInterval);
+            clearTimeout(hamsterInterval);
+            gameActive = false;
+            
+            // Hide all hamsters
+            document.querySelectorAll('.hamster').forEach(hamster => {
+                hamster.classList.remove('active');
+            });
+            
+            // Update UI
+            startButton.textContent = 'Play Again';
+            startButton.disabled = false;
+            
+            alert(`Game Over! Your final score is ${score}`);
+        }
+        
+        // Show a random hamster
+        function showRandomHamster() {
+            if (!gameActive) return;
+            
+            const hamsters = document.querySelectorAll('.hamster');
+            const activeHamsters = document.querySelectorAll('.hamster.active');
+            
+            // Hide all active hamsters
+            activeHamsters.forEach(hamster => {
+                hamster.classList.remove('active');
+                hamster.classList.remove('hit');
+            });
+            
+            // Select a random hamster to activate
+            const randomIndex = Math.floor(Math.random() * hamsters.length);
+            const selectedHamster = hamsters[randomIndex];
+            selectedHamster.classList.add('active');
+            
+            // Calculate how long the hamster stays visible based on level
+            const visibilityTime = Math.max(1500 - (level * 150), 500);
+            
+            // Hide the hamster after a delay if not hit
+            setTimeout(() => {
+                if (selectedHamster.classList.contains('active') && !selectedHamster.classList.contains('hit')) {
+                    selectedHamster.classList.remove('active');
+                }
+            }, visibilityTime);
+            
+            scheduleNextHamster();
+        }
+        
+        // Schedule the next hamster to appear
+        function scheduleNextHamster() {
+            if (!gameActive) return;
+            
+            // Calculate interval based on level
+            const intervalTime = Math.max(maxHamsterInterval - (level * 150), minHamsterInterval);
+            const randomDelay = Math.floor(Math.random() * (intervalTime - minHamsterInterval + 1)) + minHamsterInterval;
+            
+            hamsterInterval = setTimeout(showRandomHamster, randomDelay);
+        }
+        
+        // Handle hitting a hamster
+        function hitHamster(e) {
+            e.preventDefault(); // Prevent default behavior
+            
+            if (!gameActive) return;
+            
+            const hamster = e.target.closest('.hamster');
+            if (hamster && hamster.classList.contains('active') && !hamster.classList.contains('hit')) {
+                hamster.classList.add('hit');
+                
+                // Update score
+                score += 10 * level;
+                scoreElement.textContent = score;
+                
+                // Level up every 100 points
+                if (score >= level * 100) {
+                    levelUp();
+                }
+                
+                // Hide the hamster
+                setTimeout(() => {
+                    hamster.classList.remove('active');
+                    hamster.classList.remove('hit');
+                }, 200);
+            }
+        }
+        
+        // Level up
+        function levelUp() {
+            level++;
+            levelElement.textContent = level;
+            
+            // Add time as a bonus
+            timer += 5;
+            timeElement.textContent = timer;
+        }
+        
+        // Initialize the game
+        function initGame() {
+            createHoles();
+            startButton.addEventListener('click', startGame);
+        }
+        
+        // Start the game when the page loads
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
