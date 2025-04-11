@@ -29,6 +29,7 @@
       max-width: 500px;
       width: 90%;
       margin: 0 auto;
+      position: relative;
     }
     
     .game-info {
@@ -46,15 +47,14 @@
       box-shadow: 0 0 6px #5ff2ff;
     }
     
-    /* Make the canvas responsive */
+    /* The canvas has fixed internal resolution of 480x360 but will be scaled */
     canvas {
       border: 3px solid #5ff2ff;
       border-radius: 5px;
       background-color: #111;
       box-shadow: 0 0 15px #5ff2ff;
       margin-bottom: 20px;
-      width: 100%;
-      height: auto;
+      /* CSS width & height will be set via JavaScript */
     }
     
     button {
@@ -117,7 +117,6 @@
       z-index: 10;
     }
     
-    /* Additional media query for smaller screens */
     @media (max-width: 600px) {
       body {
         padding: 10px;
@@ -126,7 +125,7 @@
       h1 {
         font-size: 24px;
       }
-    
+      
       .game-container {
         width: 100%;
         max-width: 100%;
@@ -136,7 +135,7 @@
 </head>
 <body>
   <div class="game-container">
-    <h1>RETRO BRICK BREAKER v2</h1>
+    <h1>RETRO BRICK BREAKER V3</h1>
   
     <div class="game-info">
       <div class="info-box">Score: <span id="score">0</span></div>
@@ -150,7 +149,7 @@
   
     <div class="speed-control">
       <button id="slow-down">- Slower</button>
-      <div class="speed-label">Speed: <span id="speed-value">1</span>x</div>
+      <div class="speed-label">Speed: <span id="speed-value">0.5</span>x</div>
       <button id="speed-up">+ Faster</button>
     </div>
   
@@ -158,6 +157,26 @@
   </div>
   
   <script>
+    // Global scaling factor (for canvas coordinate transformation)
+    let scaleFactor = 1;
+    const LOGICAL_WIDTH = 480;
+    const LOGICAL_HEIGHT = 360;
+
+    // Adjust canvas display based on container width (preserving aspect ratio)
+    function resizeGame() {
+      const container = document.querySelector('.game-container');
+      // Calculate scale factor from container width relative to our logical width.
+      scaleFactor = container.clientWidth / LOGICAL_WIDTH;
+      const canvas = document.getElementById('gameCanvas');
+      // Set canvas CSS width and height accordingly.
+      canvas.style.width = LOGICAL_WIDTH * scaleFactor + 'px';
+      canvas.style.height = LOGICAL_HEIGHT * scaleFactor + 'px';
+    }
+    
+    window.addEventListener('resize', resizeGame);
+    // Initial call to set up the canvas scale
+    resizeGame();
+
     // Game elements
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -176,7 +195,8 @@
     let score = 0;
     let lives = 3;
     let level = 1;
-    let speedMultiplier = 1;
+    // Start game at 0.5 speed
+    let speedMultiplier = 0.5;
     
     // Ball properties
     const ball = {
@@ -330,14 +350,12 @@
       // Check paddle collision
       if (ball.y + ball.dy > paddle.y - ball.radius) {
         if (ball.x > paddle.x && ball.x < paddle.x + paddle.width) {
-          // Calculate bounce angle based on where ball hits paddle
           const hitPosition = (ball.x - paddle.x) / paddle.width;
-          const angleMultiplier = 2; // More angle = more difficulty
+          const angleMultiplier = 2;
           const newAngle = (hitPosition - 0.5) * angleMultiplier;
     
-          // Change direction and adjust angle
-          ball.dy = -Math.abs(ball.dy); // Always bounce up
-          ball.dx = ball.dx + newAngle * 2; // Adjust horizontal direction
+          ball.dy = -Math.abs(ball.dy);
+          ball.dx = ball.dx + newAngle * 2;
     
           // Limit max horizontal speed
           const maxDx = 5;
@@ -359,7 +377,6 @@
       }
     }
     
-    // Check if level is complete
     function checkLevelComplete() {
       for (let c = 0; c < brickColumnCount; c++) {
         for (let r = 0; r < brickRowCount; r++) {
@@ -371,17 +388,15 @@
       return true;
     }
     
-    // Move to next level
     function nextLevel() {
       level++;
-      ball.dx *= 1.1; // Increase speed
+      ball.dx *= 1.1;
       ball.dy *= 1.1;
       resetBall();
       createBricks();
       showMessage(`Level ${level}!`, 1500);
     }
     
-    // Game over
     function gameOver() {
       gameActive = false;
       showMessage("GAME OVER", 0);
@@ -389,7 +404,6 @@
       startButton.disabled = false;
     }
     
-    // Reset ball position
     function resetBall() {
       ball.x = canvas.width / 2;
       ball.y = canvas.height - 30;
@@ -398,7 +412,6 @@
       paddle.x = (canvas.width - paddle.width) / 2;
     }
     
-    // Show message
     function showMessage(text, duration) {
       messageElement.textContent = text;
       messageElement.style.display = "block";
@@ -410,33 +423,26 @@
       }
     }
     
-    // Draw everything
     function draw() {
       if (!gameActive || gamePaused) return;
     
-      // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-      // Draw elements
       drawBricks();
       drawBall();
       drawPaddle();
     
-      // Handle collisions
       collisionDetection();
     
-      // Move ball
       ball.x += ball.dx;
       ball.y += ball.dy;
     
-      // Move paddle
       if (rightPressed && paddle.x < canvas.width - paddle.width) {
         paddle.x += 7 * speedMultiplier;
       } else if (leftPressed && paddle.x > 0) {
         paddle.x -= 7 * speedMultiplier;
       }
     
-      // Move paddle with touch
       if (touchX !== null) {
         const paddleCenter = paddle.width / 2;
         if (touchX > paddleCenter && touchX < canvas.width - paddleCenter) {
@@ -444,38 +450,32 @@
         }
       }
     
-      // Loop animation
       requestAnimationFrame(draw);
     }
     
-    // Start game
     function startGame() {
       if (gameActive) return;
     
-      // Reset game state
       score = 0;
       lives = 3;
       level = 1;
-      speedMultiplier = 1;
+      // Reset speed to 0.5 on start
+      speedMultiplier = 0.5;
+    
       gameActive = true;
       gamePaused = false;
     
-      // Update UI
       scoreElement.textContent = score;
       livesElement.textContent = lives;
-      speedValue.textContent = speedMultiplier;
+      speedValue.textContent = speedMultiplier.toFixed(1);
       startButton.textContent = "Restart";
       messageElement.style.display = "none";
     
-      // Initialize game elements
       createBricks();
       resetBall();
-    
-      // Start animation
       draw();
     }
     
-    // Toggle pause
     function togglePause() {
       if (!gameActive) return;
     
@@ -487,27 +487,44 @@
       }
     }
     
-    // Adjust speed
     function adjustSpeed(change) {
       const newSpeed = speedMultiplier + change;
       if (newSpeed >= 0.5 && newSpeed <= 2) {
         speedMultiplier = newSpeed;
         speedValue.textContent = speedMultiplier.toFixed(1);
     
-        // Adjust ball speed
         const speedRatio = change / speedMultiplier;
         ball.dx *= (1 + speedRatio);
         ball.dy *= (1 + speedRatio);
       }
     }
     
-    // Event listeners
-    startButton.addEventListener("click", startGame);
-    pauseButton.addEventListener("click", togglePause);
-    slowDownButton.addEventListener("click", () => adjustSpeed(-0.1));
-    speedUpButton.addEventListener("click", () => adjustSpeed(0.1));
+    // Update pointer coordinates based on scale factor
+    canvas.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      touchX = (e.touches[0].clientX - rect.left) / scaleFactor;
+    });
     
-    // Keyboard controls
+    canvas.addEventListener("touchmove", (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      touchX = (e.touches[0].clientX - rect.left) / scaleFactor;
+    });
+    
+    canvas.addEventListener("touchend", () => {
+      touchX = null;
+    });
+    
+    canvas.addEventListener("mousemove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      // Adjust the coordinate relative to logical resolution
+      const mouseX = (e.clientX - rect.left) / scaleFactor;
+      if (mouseX > paddle.width / 2 && mouseX < canvas.width - paddle.width / 2) {
+        paddle.x = mouseX - paddle.width / 2;
+      }
+    });
+    
     document.addEventListener("keydown", (e) => {
       if (e.key === "Right" || e.key === "ArrowRight") {
         rightPressed = true;
@@ -526,41 +543,16 @@
       }
     });
     
-    // Touch controls
-    canvas.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      touchX = e.touches[0].clientX - canvas.getBoundingClientRect().left;
-    });
+    startButton.addEventListener("click", startGame);
+    pauseButton.addEventListener("click", togglePause);
+    slowDownButton.addEventListener("click", () => adjustSpeed(-0.1));
+    speedUpButton.addEventListener("click", () => adjustSpeed(0.1));
     
-    canvas.addEventListener("touchmove", (e) => {
-      e.preventDefault();
-      touchX = e.touches[0].clientX - canvas.getBoundingClientRect().left;
-    });
-    
-    canvas.addEventListener("touchend", () => {
-      touchX = null;
-    });
-    
-    // Mouse controls
-    canvas.addEventListener("mousemove", (e) => {
-      const mouseX = e.clientX - canvas.getBoundingClientRect().left;
-      if (mouseX > paddle.width / 2 && mouseX < canvas.width - paddle.width / 2) {
-        paddle.x = mouseX - paddle.width / 2;
-      }
-    });
-    
-    // Optional: Handle window resize to adjust canvas display size (if needed)
-    window.addEventListener("resize", () => {
-      // This event can be used to update game layout or re-calculate canvas dimensions if required.
-    });
-    
-    // Initialize the game board
+    // Initialize board drawing
     createBricks();
     drawBricks();
     drawBall();
     drawPaddle();
-    
-    // Show welcome message
     showMessage("Click Start to Play!", 3000);
   </script>
 </body>
