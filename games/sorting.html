@@ -1,0 +1,491 @@
+import React, { useState, useEffect } from 'react';
+import { Shuffle, Check, RotateCcw, Plus, Minus, Lock, Unlock, Edit2 } from 'lucide-react';
+
+export default function WordSequenceGame() {
+  const [mode, setMode] = useState('menu'); // menu, admin, player
+  const [stage, setStage] = useState('setup'); // setup, input, select, play, result
+  const [numCards, setNumCards] = useState(5);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [questions, setQuestions] = useState([]);
+  const [inputWords, setInputWords] = useState(['']);
+  const [originalSequence, setOriginalSequence] = useState([]);
+  const [currentSequence, setCurrentSequence] = useState([]);
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [completedQuestions, setCompletedQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadQuestions();
+  }, []);
+
+  const loadQuestions = async () => {
+    try {
+      const result = await window.storage.get('word_sequence_questions');
+      if (result) {
+        setQuestions(JSON.parse(result.value));
+      } else {
+        setQuestions([]);
+      }
+    } catch (error) {
+      setQuestions([]);
+    }
+    setLoading(false);
+  };
+
+  const saveQuestions = async (newQuestions) => {
+    try {
+      await window.storage.set('word_sequence_questions', JSON.stringify(newQuestions));
+      setQuestions(newQuestions);
+    } catch (error) {
+      alert('Failed to save questions. Please try again.');
+    }
+  };
+
+  const handleNumCardsChange = (delta) => {
+    const newNum = Math.max(2, Math.min(15, numCards + delta));
+    setNumCards(newNum);
+  };
+
+  const startInputting = () => {
+    setInputWords(Array(numCards).fill(''));
+    setStage('input');
+  };
+
+  const handleWordChange = (index, value) => {
+    const newWords = [...inputWords];
+    newWords[index] = value;
+    setInputWords(newWords);
+  };
+
+  const shuffleArray = (array) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  const saveCurrentQuestion = async () => {
+    const validWords = inputWords.filter(w => w.trim() !== '');
+    if (validWords.length < 2) {
+      alert('Please enter at least 2 words!');
+      return;
+    }
+
+    const newQuestions = [...questions];
+    newQuestions[currentQuestionIndex] = validWords;
+    await saveQuestions(newQuestions);
+
+    if (currentQuestionIndex < 2) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setNumCards(5);
+      setStage('setup');
+    } else {
+      alert('All 3 questions saved successfully!');
+      setMode('menu');
+      setStage('setup');
+      setCurrentQuestionIndex(0);
+    }
+  };
+
+  const deleteQuestion = async (index) => {
+    if (confirm(`Delete Question ${index + 1}?`)) {
+      const newQuestions = questions.filter((_, i) => i !== index);
+      await saveQuestions(newQuestions);
+    }
+  };
+
+  const startPlaying = () => {
+    if (questions.length === 0) {
+      alert('No questions available! Please ask User 1 to create questions first.');
+      return;
+    }
+    setMode('player');
+    setStage('select');
+    setCompletedQuestions([]);
+  };
+
+  const selectQuestion = (index) => {
+    if (completedQuestions.includes(index)) {
+      alert('You have already completed this question!');
+      return;
+    }
+
+    const question = questions[index];
+    setOriginalSequence(question);
+    const shuffled = shuffleArray(question);
+    setCurrentSequence(shuffled);
+    setCurrentQuestionIndex(index);
+    setStage('play');
+  };
+
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newSequence = [...currentSequence];
+    const draggedItem = newSequence[draggedIndex];
+    newSequence.splice(draggedIndex, 1);
+    newSequence.splice(index, 0, draggedItem);
+    
+    setCurrentSequence(newSequence);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  const handleTouchStart = (index) => {
+    setDraggedIndex(index);
+  };
+
+  const handleTouchMove = (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newSequence = [...currentSequence];
+    const draggedItem = newSequence[draggedIndex];
+    newSequence.splice(draggedIndex, 1);
+    newSequence.splice(index, 0, draggedItem);
+    
+    setCurrentSequence(newSequence);
+    setDraggedIndex(index);
+  };
+
+  const handleTouchEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  const checkSequence = () => {
+    const isCorrect = JSON.stringify(currentSequence) === JSON.stringify(originalSequence);
+    if (isCorrect) {
+      setCompletedQuestions([...completedQuestions, currentQuestionIndex]);
+    }
+    setStage(isCorrect ? 'success' : 'fail');
+  };
+
+  const resetToMenu = () => {
+    setMode('menu');
+    setStage('setup');
+    setNumCards(5);
+    setCurrentQuestionIndex(0);
+    setOriginalSequence([]);
+    setCurrentSequence([]);
+    setInputWords(['']);
+    setDraggedIndex(null);
+  };
+
+  const reshuffleCards = () => {
+    const shuffled = shuffleArray(currentSequence);
+    setCurrentSequence(shuffled);
+  };
+
+  const backToSelection = () => {
+    setStage('select');
+    setCurrentSequence([]);
+    setOriginalSequence([]);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
+        <div className="text-xl text-purple-700">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold text-center text-purple-800 mb-8 mt-4">
+          Word Sequence Game
+        </h1>
+
+        {/* Main Menu */}
+        {mode === 'menu' && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">Welcome!</h2>
+            
+            <div className="space-y-4">
+              <button
+                onClick={() => { setMode('admin'); setCurrentQuestionIndex(0); setStage('setup'); }}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-lg flex items-center justify-center gap-3"
+              >
+                <Lock size={24} />
+                <span>User 1: Create Questions</span>
+              </button>
+
+              <button
+                onClick={startPlaying}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-lg flex items-center justify-center gap-3"
+              >
+                <Unlock size={24} />
+                <span>User 2: Play Game</span>
+              </button>
+
+              {questions.length > 0 && (
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                  <h3 className="font-semibold text-gray-800 mb-2">Available Questions:</h3>
+                  <div className="space-y-2">
+                    {questions.map((q, index) => (
+                      <div key={index} className="flex items-center justify-between bg-white p-3 rounded">
+                        <span className="text-gray-700">Question {index + 1} ({q.length} words)</span>
+                        <button
+                          onClick={() => deleteQuestion(index)}
+                          className="text-red-500 hover:text-red-700 text-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Admin Mode - Setup */}
+        {mode === 'admin' && stage === 'setup' && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Create Question {currentQuestionIndex + 1} of 3
+              </h2>
+              <button onClick={resetToMenu} className="text-gray-500 hover:text-gray-700">
+                ✕
+              </button>
+            </div>
+            <p className="text-gray-600 mb-6">How many word cards for this question?</p>
+            
+            <div className="flex items-center justify-center gap-4 mb-8">
+              <button
+                onClick={() => handleNumCardsChange(-1)}
+                className="bg-purple-500 hover:bg-purple-600 text-white p-3 rounded-full"
+              >
+                <Minus size={24} />
+              </button>
+              <div className="text-4xl font-bold text-purple-700 w-16 text-center">
+                {numCards}
+              </div>
+              <button
+                onClick={() => handleNumCardsChange(1)}
+                className="bg-purple-500 hover:bg-purple-600 text-white p-3 rounded-full"
+              >
+                <Plus size={24} />
+              </button>
+            </div>
+
+            <button
+              onClick={startInputting}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg"
+            >
+              Start Creating Cards
+            </button>
+          </div>
+        )}
+
+        {/* Admin Mode - Input */}
+        {mode === 'admin' && stage === 'input' && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Question {currentQuestionIndex + 1} of 3
+              </h2>
+              <button onClick={resetToMenu} className="text-gray-500 hover:text-gray-700">
+                ✕
+              </button>
+            </div>
+            <p className="text-gray-600 mb-6">Enter words in the correct sequence:</p>
+            
+            <div className="space-y-3 mb-6">
+              {inputWords.map((word, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <span className="text-lg font-semibold text-purple-600 w-8">{index + 1}.</span>
+                  <input
+                    type="text"
+                    value={word}
+                    onChange={(e) => handleWordChange(index, e.target.value)}
+                    placeholder={`Word ${index + 1}`}
+                    className="flex-1 border-2 border-purple-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={saveCurrentQuestion}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg"
+            >
+              {currentQuestionIndex < 2 ? 'Save & Next Question' : 'Save & Finish'}
+            </button>
+          </div>
+        )}
+
+        {/* Player Mode - Question Selection */}
+        {mode === 'player' && stage === 'select' && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">Select a Question</h2>
+              <button onClick={resetToMenu} className="text-gray-500 hover:text-gray-700">
+                ✕
+              </button>
+            </div>
+            <p className="text-gray-600 mb-6">Choose a question to solve:</p>
+            
+            <div className="space-y-3">
+              {questions.map((question, index) => (
+                <button
+                  key={index}
+                  onClick={() => selectQuestion(index)}
+                  disabled={completedQuestions.includes(index)}
+                  className={`w-full p-4 rounded-lg font-semibold text-lg transition-all ${
+                    completedQuestions.includes(index)
+                      ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>Question {index + 1}</span>
+                    <span className="text-sm">
+                      {completedQuestions.includes(index) ? '✓ Completed' : `${question.length} words`}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {completedQuestions.length === questions.length && questions.length > 0 && (
+              <div className="mt-6 p-4 bg-green-50 rounded-lg text-center">
+                <div className="text-4xl mb-2">🎉</div>
+                <p className="text-green-700 font-semibold">All questions completed!</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Player Mode - Playing */}
+        {mode === 'player' && stage === 'play' && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Question {currentQuestionIndex + 1}
+              </h2>
+              <button onClick={backToSelection} className="text-gray-500 hover:text-gray-700">
+                ✕
+              </button>
+            </div>
+            <p className="text-gray-600 mb-6">Drag and drop the cards to recreate the sequence:</p>
+            
+            <div className="space-y-3 mb-6">
+              {currentSequence.map((word, index) => (
+                <div
+                  key={index}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
+                  onTouchStart={() => handleTouchStart(index)}
+                  onTouchMove={(e) => handleTouchMove(e, index)}
+                  onTouchEnd={handleTouchEnd}
+                  className={`bg-gradient-to-r from-purple-400 to-blue-400 text-white p-4 rounded-lg cursor-move shadow-md active:shadow-lg transition-shadow ${
+                    draggedIndex === index ? 'opacity-50' : 'opacity-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold">#{index + 1}</span>
+                    <span className="text-xl font-bold">{word}</span>
+                    <span className="text-sm">⋮⋮</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={reshuffleCards}
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center gap-2"
+              >
+                <Shuffle size={20} />
+                Reshuffle
+              </button>
+              <button
+                onClick={checkSequence}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center gap-2"
+              >
+                <Check size={20} />
+                Check
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {mode === 'player' && stage === 'success' && (
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center">
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-2xl font-bold text-green-600 mb-4">Perfect!</h2>
+            <p className="text-gray-700 mb-6">You've arranged the cards correctly!</p>
+            
+            <div className="bg-green-50 rounded-lg p-4 mb-6">
+              <h3 className="font-semibold text-gray-800 mb-3">Correct Sequence:</h3>
+              <div className="space-y-2">
+                {originalSequence.map((word, index) => (
+                  <div key={index} className="text-lg">
+                    {index + 1}. {word}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={backToSelection}
+                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg"
+              >
+                Back to Questions
+              </button>
+              <button
+                onClick={resetToMenu}
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg"
+              >
+                Main Menu
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Fail */}
+        {mode === 'player' && stage === 'fail' && (
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center">
+            <div className="text-6xl mb-4">😢</div>
+            <h2 className="text-2xl font-bold text-red-600 mb-4">Not Quite Right</h2>
+            <p className="text-gray-700 mb-6">The sequence doesn't match. Try again!</p>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStage('play')}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={backToSelection}
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg"
+              >
+                Back to Questions
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
