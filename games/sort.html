@@ -22,26 +22,13 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // Mock storage for GitHub Pages (replace with your backend)
-        const mockStorage = {
-            data: {},
-            get: async (key) => {
-                const value = localStorage.getItem(key);
-                return value ? { value } : null;
-            },
-            set: async (key, value) => {
-                localStorage.setItem(key, value);
-                return { key, value };
-            }
-        };
-
         // Icons
         const PlusIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
         const MinusIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
         const ShuffleIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>;
         const CheckIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg>;
-        const LockIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
-        const UnlockIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>;
+        const ShareIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>;
+        const CopyIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>;
 
         function WordSequenceGame() {
             const [mode, setMode] = useState('menu');
@@ -54,34 +41,27 @@
             const [currentSequence, setCurrentSequence] = useState([]);
             const [draggedIndex, setDraggedIndex] = useState(null);
             const [completedQuestions, setCompletedQuestions] = useState([]);
-            const [loading, setLoading] = useState(true);
+            const [shareableLink, setShareableLink] = useState('');
+            const [copied, setCopied] = useState(false);
 
             useEffect(() => {
-                loadQuestions();
-            }, []);
-
-            const loadQuestions = async () => {
-                try {
-                    const result = await mockStorage.get('word_sequence_questions');
-                    if (result) {
-                        setQuestions(JSON.parse(result.value));
-                    } else {
-                        setQuestions([]);
+                // Check if there's puzzle data in URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const puzzleData = urlParams.get('puzzle');
+                
+                if (puzzleData) {
+                    try {
+                        const decodedData = JSON.parse(atob(puzzleData));
+                        setQuestions(decodedData);
+                        setMode('player');
+                        setStage('select');
+                    } catch (error) {
+                        console.error('Invalid puzzle data');
                     }
-                } catch (error) {
-                    setQuestions([]);
+                } else {
+                    setMode('menu');
                 }
-                setLoading(false);
-            };
-
-            const saveQuestions = async (newQuestions) => {
-                try {
-                    await mockStorage.set('word_sequence_questions', JSON.stringify(newQuestions));
-                    setQuestions(newQuestions);
-                } catch (error) {
-                    alert('Failed to save questions. Please try again.');
-                }
-            };
+            }, []);
 
             const handleNumCardsChange = (delta) => {
                 const newNum = Math.max(2, Math.min(15, numCards + delta));
@@ -108,7 +88,7 @@
                 return shuffled;
             };
 
-            const saveCurrentQuestion = async () => {
+            const saveCurrentQuestion = () => {
                 const validWords = inputWords.filter(w => w.trim() !== '');
                 if (validWords.length < 2) {
                     alert('Please enter at least 2 words!');
@@ -117,30 +97,32 @@
 
                 const newQuestions = [...questions];
                 newQuestions[currentQuestionIndex] = validWords;
-                await saveQuestions(newQuestions);
+                setQuestions(newQuestions);
 
                 if (currentQuestionIndex < 2) {
                     setCurrentQuestionIndex(currentQuestionIndex + 1);
                     setNumCards(5);
                     setStage('setup');
                 } else {
-                    alert('All 3 questions saved successfully!');
-                    setMode('menu');
-                    setStage('setup');
-                    setCurrentQuestionIndex(0);
+                    // Generate shareable link
+                    const encodedData = btoa(JSON.stringify(newQuestions));
+                    const baseUrl = window.location.origin + window.location.pathname;
+                    const link = `${baseUrl}?puzzle=${encodedData}`;
+                    setShareableLink(link);
+                    setStage('share');
                 }
             };
 
-            const deleteQuestion = async (index) => {
-                if (confirm(`Delete Question ${index + 1}?`)) {
-                    const newQuestions = questions.filter((_, i) => i !== index);
-                    await saveQuestions(newQuestions);
-                }
+            const copyToClipboard = () => {
+                navigator.clipboard.writeText(shareableLink).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                });
             };
 
             const startPlaying = () => {
                 if (questions.length === 0) {
-                    alert('No questions available! Please ask User 1 to create questions first.');
+                    alert('No questions available!');
                     return;
                 }
                 setMode('player');
@@ -214,14 +196,7 @@
             };
 
             const resetToMenu = () => {
-                setMode('menu');
-                setStage('setup');
-                setNumCards(5);
-                setCurrentQuestionIndex(0);
-                setOriginalSequence([]);
-                setCurrentSequence([]);
-                setInputWords(['']);
-                setDraggedIndex(null);
+                window.location.href = window.location.origin + window.location.pathname;
             };
 
             const reshuffleCards = () => {
@@ -235,14 +210,6 @@
                 setOriginalSequence([]);
             };
 
-            if (loading) {
-                return (
-                    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
-                        <div className="text-xl text-purple-700">Loading...</div>
-                    </div>
-                );
-            }
-
             return (
                 <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4">
                     <div className="max-w-2xl mx-auto">
@@ -250,49 +217,22 @@
                             Word Sequence Game
                         </h1>
 
+                        {/* Main Menu - User 1 Only */}
                         {mode === 'menu' && (
                             <div className="bg-white rounded-lg shadow-lg p-6">
-                                <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">Welcome!</h2>
+                                <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">Welcome User 1!</h2>
+                                <p className="text-gray-600 mb-6 text-center">Create 3 puzzles and share them with User 2</p>
                                 
-                                <div className="space-y-4">
-                                    <button
-                                        onClick={() => { setMode('admin'); setCurrentQuestionIndex(0); setStage('setup'); }}
-                                        className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-lg flex items-center justify-center gap-3"
-                                    >
-                                        <LockIcon />
-                                        <span>User 1: Create Questions</span>
-                                    </button>
-
-                                    <button
-                                        onClick={startPlaying}
-                                        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-lg flex items-center justify-center gap-3"
-                                    >
-                                        <UnlockIcon />
-                                        <span>User 2: Play Game</span>
-                                    </button>
-
-                                    {questions.length > 0 && (
-                                        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                                            <h3 className="font-semibold text-gray-800 mb-2">Available Questions:</h3>
-                                            <div className="space-y-2">
-                                                {questions.map((q, index) => (
-                                                    <div key={index} className="flex items-center justify-between bg-white p-3 rounded">
-                                                        <span className="text-gray-700">Question {index + 1} ({q.length} words)</span>
-                                                        <button
-                                                            onClick={() => deleteQuestion(index)}
-                                                            className="text-red-500 hover:text-red-700 text-sm"
-                                                        >
-                                                            Delete
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                <button
+                                    onClick={() => { setMode('admin'); setCurrentQuestionIndex(0); setStage('setup'); setQuestions([]); }}
+                                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-lg"
+                                >
+                                    Create New Puzzle Set
+                                </button>
                             </div>
                         )}
 
+                        {/* Admin Mode - Setup */}
                         {mode === 'admin' && stage === 'setup' && (
                             <div className="bg-white rounded-lg shadow-lg p-6">
                                 <div className="flex items-center justify-between mb-4">
@@ -319,6 +259,7 @@
                             </div>
                         )}
 
+                        {/* Admin Mode - Input */}
                         {mode === 'admin' && stage === 'input' && (
                             <div className="bg-white rounded-lg shadow-lg p-6">
                                 <div className="flex items-center justify-between mb-4">
@@ -327,7 +268,7 @@
                                 </div>
                                 <p className="text-gray-600 mb-6">Enter words in the correct sequence:</p>
                                 
-                                <div className="space-y-3 mb-6">
+                                <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
                                     {inputWords.map((word, index) => (
                                         <div key={index} className="flex items-center gap-3">
                                             <span className="text-lg font-semibold text-purple-600 w-8">{index + 1}.</span>
@@ -343,17 +284,61 @@
                                 </div>
 
                                 <button onClick={saveCurrentQuestion} className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg">
-                                    {currentQuestionIndex < 2 ? 'Save & Next Question' : 'Save & Finish'}
+                                    {currentQuestionIndex < 2 ? 'Save & Next Question' : 'Save & Generate Link'}
                                 </button>
                             </div>
                         )}
 
+                        {/* Share Link Screen */}
+                        {mode === 'admin' && stage === 'share' && (
+                            <div className="bg-white rounded-lg shadow-lg p-6">
+                                <div className="text-center mb-6">
+                                    <div className="text-6xl mb-4">🎉</div>
+                                    <h2 className="text-2xl font-bold text-green-600 mb-2">Puzzle Created!</h2>
+                                    <p className="text-gray-600">Share this link with User 2 to play</p>
+                                </div>
+
+                                <div className="bg-gray-100 rounded-lg p-4 mb-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <ShareIcon />
+                                        <span className="font-semibold text-gray-700">Shareable Link:</span>
+                                    </div>
+                                    <div className="bg-white p-3 rounded border-2 border-gray-300 break-all text-sm">
+                                        {shareableLink}
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={copyToClipboard}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center gap-2 mb-3"
+                                >
+                                    <CopyIcon />
+                                    {copied ? 'Copied!' : 'Copy Link'}
+                                </button>
+
+                                <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                                    <h3 className="font-semibold text-gray-800 mb-2">How to use:</h3>
+                                    <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
+                                        <li>Copy the link above</li>
+                                        <li>Share it with User 2 (via email, WhatsApp, etc.)</li>
+                                        <li>User 2 opens the link in their browser</li>
+                                        <li>They can play the puzzle multiple times!</li>
+                                    </ol>
+                                </div>
+
+                                <button
+                                    onClick={resetToMenu}
+                                    className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg"
+                                >
+                                    Create Another Puzzle
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Player Mode - Question Selection */}
                         {mode === 'player' && stage === 'select' && (
                             <div className="bg-white rounded-lg shadow-lg p-6">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-xl font-semibold text-gray-800">Select a Question</h2>
-                                    <button onClick={resetToMenu} className="text-gray-500 hover:text-gray-700">✕</button>
-                                </div>
+                                <h2 className="text-xl font-semibold text-gray-800 mb-4">Welcome User 2!</h2>
                                 <p className="text-gray-600 mb-6">Choose a question to solve:</p>
                                 
                                 <div className="space-y-3">
@@ -382,15 +367,24 @@
                                     <div className="mt-6 p-4 bg-green-50 rounded-lg text-center">
                                         <div className="text-4xl mb-2">🎉</div>
                                         <p className="text-green-700 font-semibold">All questions completed!</p>
+                                        <button
+                                            onClick={() => setCompletedQuestions([])}
+                                            className="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg"
+                                        >
+                                            Play Again
+                                        </button>
                                     </div>
                                 )}
                             </div>
                         )}
 
+                        {/* Player Mode - Playing */}
                         {mode === 'player' && stage === 'play' && (
                             <div className="bg-white rounded-lg shadow-lg p-6">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-xl font-semibold text-gray-800">Question {currentQuestionIndex + 1}</h2>
+                                    <h2 className="text-xl font-semibold text-gray-800">
+                                        Question {currentQuestionIndex + 1}
+                                    </h2>
                                     <button onClick={backToSelection} className="text-gray-500 hover:text-gray-700">✕</button>
                                 </div>
                                 <p className="text-gray-600 mb-6">Drag and drop the cards to recreate the sequence:</p>
@@ -432,6 +426,7 @@
                             </div>
                         )}
 
+                        {/* Success */}
                         {mode === 'player' && stage === 'success' && (
                             <div className="bg-white rounded-lg shadow-lg p-6 text-center">
                                 <div className="text-6xl mb-4">🎉</div>
@@ -447,17 +442,13 @@
                                     </div>
                                 </div>
 
-                                <div className="flex gap-3">
-                                    <button onClick={backToSelection} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg">
-                                        Back to Questions
-                                    </button>
-                                    <button onClick={resetToMenu} className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg">
-                                        Main Menu
-                                    </button>
-                                </div>
+                                <button onClick={backToSelection} className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg">
+                                    Back to Questions
+                                </button>
                             </div>
                         )}
 
+                        {/* Fail */}
                         {mode === 'player' && stage === 'fail' && (
                             <div className="bg-white rounded-lg shadow-lg p-6 text-center">
                                 <div className="text-6xl mb-4">😢</div>
