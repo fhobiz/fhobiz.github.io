@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Student Demo: IT Helpdesk Bot</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; background:#f4f6f8; margin:0; padding:0; display:flex; height:100vh; }
+    .container { margin:auto; width:720px; background:white; box-shadow:0 6px 24px rgba(40,40,60,0.08); border-radius:8px; overflow:hidden; display:flex; flex-direction:column; }
+    header { background:#0b5fff; color:white; padding:16px 20px; }
+    main { padding:20px; flex:1; overflow:auto; }
+    .chat { max-height:420px; overflow:auto; display:flex; flex-direction:column; gap:10px; }
+    .msg { max-width:78%; padding:10px 12px; border-radius:10px; }
+    .user { align-self:flex-end; background:#e6f0ff; }
+    .bot { align-self:flex-start; background:#f1f3f5; }
+    footer { display:flex; gap:8px; padding:12px; border-top:1px solid #eee; }
+    input[type="text"] { flex:1; padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px; }
+    button { padding:10px 12px; border-radius:6px; border:0; background:#0b5fff; color:white; cursor:pointer; }
+    small { color:#666; display:block; margin-top:6px; }
+    .ticket { border:1px dashed #ccc; padding:12px; border-radius:6px; background:#fffdf5; }
+    .rules { font-family:monospace; font-size:13px; white-space:pre-wrap; background:#fcfcfc; border:1px solid #eee; padding:8px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <strong>IT Helpdesk Bot — Student Demo</strong>
+      <div style="font-size:12px; opacity:0.9; margin-top:6px;">Say "I need IT help" to start the flow.</div>
+    </header>
+
+    <main>
+      <div class="chat" id="chat"></div>
+
+      <div style="margin-top:16px;">
+        <strong>Routing rules (editable in the code):</strong>
+        <div class="rules" id="rulesPreview"></div>
+        <small>Tip: open the HTML file in a text editor and change/add keywords to see different routing results.</small>
+      </div>
+    </main>
+
+    <footer>
+      <input id="input" type="text" placeholder="Type a message (try: I need IT help)" />
+      <button id="send">Send</button>
+      <button id="reset" style="background:#ff6b6b">Reset</button>
+    </footer>
+  </div>
+
+  <script>
+    // ----- Simple demo rules: pattern -> [Category, Assignee]
+    // Students can open this file and modify these patterns or add new ones
+    const ROUTING_RULES = [
+      [/(password|login|locked|forgot|signin)/i, ["Account Support", "Alice (Identity Team)"]],
+      [/(email|outlook|mail|send email|receive email|exchange)/i, ["Email Support", "Ben (Mail Team)"]],
+      [/(vpn|remote|remote desktop|rdp|access vpn)/i, ["Remote Access", "Carol (Network Team)"]],
+      [/(printer|print|printing|paper jam)/i, ["Printing Support", "Dan (Print Services)"]],
+      [/(laptop|computer|slow|blue screen|crash|hardware|battery|screen)/i, ["Hardware Support", "Eve (Hardware Team)"]],
+      [/(software|install|installing|app|application|update|patch|license)/i, ["Application Support", "Frank (Apps Team)"]],
+      [/(wifi|wi-?fi|internet|network|disconnect|latency)/i, ["Network Support", "Grace (Network Team)"]],
+      [/(security|virus|malware|phish|ransomware|compromise)/i, ["Security", "Hector (Security Team)"]],
+    ];
+    const DEFAULT_ROUTE = ["General IT Support", "IT Service Desk (Triage)"];
+
+    // Display rules for students to read quickly
+    const rulesPreview = document.getElementById('rulesPreview');
+    rulesPreview.textContent = ROUTING_RULES.map(r => {
+      return `${r[0]}   -> ${r[1][0]} / ${r[1][1]}`;
+    }).join('\n');
+
+    // ----- Chat state machine
+    const STATE = {
+      IDLE: 'IDLE',
+      AWAIT_ISSUE: 'AWAIT_ISSUE',
+      AWAIT_EMAIL: 'AWAIT_EMAIL',
+      DONE: 'DONE'
+    };
+    let state = STATE.IDLE;
+    let currentIssue = '';
+    let currentEmail = '';
+    let lastTicket = null;
+
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('input');
+    const sendBtn = document.getElementById('send');
+    const resetBtn = document.getElementById('reset');
+
+    function appendBot(text, html=false) {
+      const el = document.createElement('div');
+      el.className = 'msg bot';
+      if (html) el.innerHTML = text;
+      else el.textContent = text;
+      chat.appendChild(el);
+      chat.scrollTop = chat.scrollHeight;
+    }
+    function appendUser(text) {
+      const el = document.createElement('div');
+      el.className = 'msg user';
+      el.textContent = text;
+      chat.appendChild(el);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function sanitizeEmail(email) {
+      email = email.trim();
+      // simple validation
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
+    }
+
+    function classifyIssue(text) {
+      for (const [pattern, route] of ROUTING_RULES) {
+        if (pattern.test(text)) return route;
+      }
+      return DEFAULT_ROUTE;
+    }
+
+    function createTicket(email, summary, category, assignee) {
+      const id = Math.random().toString(36).slice(2,10).toUpperCase();
+      const ticket = {
+        id, created: new Date().toISOString(), reporter: email, summary, category, assignee, status: 'Assigned'
+      };
+      lastTicket = ticket;
+      return ticket;
+    }
+
+    // Bot initial greeting
+    appendBot("Hi — I'm the IT Helpdesk Bot. Say 'I need IT help' to start, or ask a question.");
+
+    function handleUserMessage(msg) {
+      appendUser(msg);
+
+      if (state === STATE.IDLE) {
+        if (msg.trim().toLowerCase() === 'i need it help') {
+          state = STATE.AWAIT_ISSUE;
+          appendBot("Sure — please briefly describe the issue you're experiencing.");
+        } else {
+          appendBot("Waiting for trigger. Say 'I need IT help' to start the help flow.");
+        }
+        return;
+      }
+
+      if (state === STATE.AWAIT_ISSUE) {
+        if (!msg.trim()) {
+          appendBot("Please describe the issue so I can help.");
+          return;
+        }
+        currentIssue = msg.trim();
+        state = STATE.AWAIT_EMAIL;
+        appendBot("Thanks. What email should we use to contact you about this ticket?");
+        return;
+      }
+
+      if (state === STATE.AWAIT_EMAIL) {
+        const email = sanitizeEmail(msg);
+        if (!email) {
+          appendBot("That email doesn't look valid. Please provide a correct email address (e.g., student@school.edu).");
+          return;
+        }
+        currentEmail = email;
+
+        // classify + create ticket
+        const [category, assignee] = classifyIssue(currentIssue);
+        const ticket = createTicket(currentEmail, currentIssue, category, assignee);
+
+        // show routing and ticket summary
+        appendBot(
+          `<strong>Ticket created</strong><br>` +
+          `<div class="ticket">` +
+          `<strong>ID:</strong> ${ticket.id}<br>` +
+          `<strong>Summary:</strong> ${escapeHtml(ticket.summary)}<br>` +
+          `<strong>Category:</strong> ${ticket.category}<br>` +
+          `<strong>Assigned to:</strong> ${ticket.assignee}<br>` +
+          `<strong>Reportee:</strong> ${ticket.reporter}<br>` +
+          `</div>` +
+          `<br>I routed this to ${ticket.assignee} in the ${ticket.category} team. You should receive an email confirmation (simulated). If it's urgent, escalate to the IT Service Desk.`
+          , true
+        );
+
+        state = STATE.DONE;
+        appendBot("Flow complete. Type 'I need IT help' to open a new ticket, or press Reset to restart.");
+        return;
+      }
+
+      if (state === STATE.DONE) {
+        appendBot("If you'd like another ticket, say 'I need IT help' or press Reset.");
+      }
+    }
+
+    sendBtn.addEventListener('click', () => {
+      const text = input.value.trim();
+      if (!text) return;
+      handleUserMessage(text);
+      input.value = '';
+      input.focus();
+    });
+
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') { sendBtn.click(); ev.preventDefault(); }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      state = STATE.IDLE;
+      currentIssue = '';
+      currentEmail = '';
+      lastTicket = null;
+      chat.innerHTML = '';
+      appendBot("Hi — I'm the IT Helpdesk Bot. Say 'I need IT help' to start, or ask a question.");
+    });
+
+    // small helper to render regex as readable text in preview
+    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]); }); }
+  </script>
+</body>
+</html>
