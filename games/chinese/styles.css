@@ -1,0 +1,332 @@
+:root {
+  --bg: #0f172a;
+  --card-bg: #1e293b;
+  --accent: #f97316;
+  --accent-dark: #c2410c;
+  --text: #f8fafc;
+  --text-dim: #94a3b8;
+  --green: #22c55e;
+  --red: #ef4444;
+  --radius: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+  min-height: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.title {
+  font-size: 1.8rem;
+  margin: 8px 0 0;
+  text-align: center;
+}
+
+.subtitle {
+  color: var(--text-dim);
+  text-align: center;
+  margin: 0 0 8px;
+}
+
+.field-label {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.text-input {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 1.1rem;
+  border-radius: var(--radius);
+  border: 2px solid #334155;
+  background: var(--card-bg);
+  color: var(--text);
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.mode-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 18px;
+  border-radius: var(--radius);
+  border: 2px solid #334155;
+  background: var(--card-bg);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.mode-btn.selected {
+  border-color: var(--accent);
+  background: #27211a;
+}
+
+.mode-icon {
+  font-size: 1.6rem;
+}
+
+.mode-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.mode-desc {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.primary-btn {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.primary-btn:disabled {
+  background: #475569;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.primary-btn:active:not(:disabled) {
+  background: var(--accent-dark);
+}
+
+.secondary-btn {
+  padding: 14px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid #475569;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.error-text {
+  color: var(--red);
+  text-align: center;
+  margin: 0;
+}
+
+/* Game screen */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  color: var(--text-dim);
+}
+
+.prompt-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.prompt-label {
+  margin: 0 0 8px;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.prompt-english {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.mode-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.record-btn {
+  font-size: 1.3rem;
+}
+
+.status-text {
+  text-align: center;
+  color: var(--text-dim);
+  min-height: 1.2em;
+  margin: 0;
+}
+
+.result-box {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+}
+
+.heard-text {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.expected-text {
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.answer-chinese {
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+.feedback-text {
+  margin-top: 8px;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.feedback-text.correct {
+  color: var(--green);
+}
+
+.feedback-text.wrong {
+  color: var(--red);
+}
+
+.self-grade-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.grade-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: var(--radius);
+  border: none;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  font-family: inherit;
+  color: #fff;
+}
+
+.grade-btn.correct {
+  background: var(--green);
+}
+
+.grade-btn.wrong {
+  background: var(--red);
+}
+
+.write-boxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.write-box-canvas {
+  width: 72px;
+  height: 72px;
+  border: 2px solid #475569;
+  border-radius: 10px;
+  background: #fff;
+  touch-action: none;
+}
+
+.write-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.write-actions .secondary-btn,
+.write-actions .primary-btn {
+  flex: 1;
+}
+
+.next-btn {
+  margin-top: auto;
+}
+
+/* Results screen */
+.final-score {
+  text-align: center;
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin: 0;
+}
+
+.results-table-wrap {
+  overflow-x: auto;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.results-table th,
+.results-table td {
+  padding: 8px 6px;
+  text-align: left;
+  border-bottom: 1px solid #334155;
+}
+
+.results-table th {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.mark-correct {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.mark-wrong {
+  color: var(--red);
+  font-weight: 700;
+}

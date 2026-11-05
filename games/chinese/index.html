@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Chinese Phrase Tester</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- HOME SCREEN -->
+    <section id="screen-home" class="screen" data-screen="home">
+      <h1 class="title">上海 Phrase Challenge</h1>
+      <p class="subtitle">Test yourself on 20 Shanghai trip phrases!</p>
+
+      <label class="field-label" for="player-name">Your name</label>
+      <input id="player-name" class="text-input" type="text" placeholder="Enter your name" autocomplete="off" />
+
+      <div class="mode-choices">
+        <button class="mode-btn" data-mode="say" type="button">
+          <span class="mode-icon">🗣️</span>
+          <span class="mode-title">说 Say it</span>
+          <span class="mode-desc">Speak the Chinese phrase aloud</span>
+        </button>
+        <button class="mode-btn" data-mode="write" type="button">
+          <span class="mode-icon">✍️</span>
+          <span class="mode-title">写 Write it</span>
+          <span class="mode-desc">Write the characters with your finger</span>
+        </button>
+      </div>
+
+      <button id="start-btn" class="primary-btn" type="button" disabled>Start</button>
+      <p id="home-error" class="error-text" hidden></p>
+    </section>
+
+    <!-- GAME SCREEN -->
+    <section id="screen-game" class="screen" data-screen="game" hidden>
+      <div class="game-header">
+        <span id="game-progress" class="progress-text">1 / 20</span>
+        <span id="game-score" class="score-text">Score: 0</span>
+      </div>
+
+      <div class="prompt-card">
+        <p class="prompt-label">Say / write this in Chinese:</p>
+        <p id="prompt-english" class="prompt-english"></p>
+      </div>
+
+      <!-- Say it controls -->
+      <div id="say-controls" class="mode-panel" hidden>
+        <button id="record-btn" class="primary-btn record-btn" type="button">🎤 Record</button>
+        <p id="say-status" class="status-text"></p>
+        <div id="say-result" class="result-box" hidden>
+          <p id="say-heard" class="heard-text"></p>
+          <p id="say-expected" class="expected-text"></p>
+          <div id="say-feedback" class="feedback-text"></div>
+        </div>
+        <div id="say-self-grade" class="self-grade-row" hidden>
+          <button id="say-audio-play" class="secondary-btn" type="button" hidden>▶ Play back</button>
+          <button id="say-correct-btn" class="grade-btn correct" type="button">I said it right</button>
+          <button id="say-wrong-btn" class="grade-btn wrong" type="button">I got it wrong</button>
+        </div>
+      </div>
+
+      <!-- Write it controls -->
+      <div id="write-controls" class="mode-panel" hidden>
+        <div id="write-boxes" class="write-boxes"></div>
+        <div class="write-actions">
+          <button id="write-clear-btn" class="secondary-btn" type="button">Clear</button>
+          <button id="write-check-btn" class="primary-btn" type="button">Check</button>
+        </div>
+        <div id="write-answer" class="result-box" hidden>
+          <p class="expected-text">Correct answer: <span id="write-answer-chinese" class="answer-chinese"></span></p>
+          <div class="self-grade-row">
+            <button id="write-correct-btn" class="grade-btn correct" type="button">Correct</button>
+            <button id="write-wrong-btn" class="grade-btn wrong" type="button">Wrong</button>
+          </div>
+        </div>
+      </div>
+
+      <button id="next-btn" class="primary-btn next-btn" type="button" hidden>Next</button>
+    </section>
+
+    <!-- RESULTS SCREEN -->
+    <section id="screen-results" class="screen" data-screen="results" hidden>
+      <h1 class="title">Game Over!</h1>
+      <p id="results-name" class="subtitle"></p>
+      <p id="results-score" class="final-score"></p>
+
+      <div class="results-table-wrap">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>English</th>
+              <th>Chinese</th>
+              <th>Your answer</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
+
+      <button id="play-again-btn" class="primary-btn" type="button">Play again</button>
+    </section>
+  </div>
+
+  <script src="phrases.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+// 20 Shanghai-trip Chinese phrases used by the game.
+const PHRASES = [
+  { chinese: '你好', pinyin: 'nǐ hǎo', english: 'Hello' },
+  { chinese: '谢谢', pinyin: 'xiè xie', english: 'Thank you' },
+  { chinese: '多少钱', pinyin: 'duō shǎo qián', english: 'How much' },
+  { chinese: '厕所', pinyin: 'cè suǒ', english: 'Toilet' },
+  { chinese: '好吃', pinyin: 'hǎo chī', english: 'Delicious' },
+  { chinese: '中国', pinyin: 'Zhōng guó', english: 'China' },
+  { chinese: '上海', pinyin: 'Shàng hǎi', english: 'Shanghai' },
+  { chinese: '请问', pinyin: 'qǐng wèn', english: 'Excuse me, may I ask...?' },
+  { chinese: '再见', pinyin: 'zài jiàn', english: 'Goodbye' },
+  { chinese: '豫园', pinyin: 'Yù yuán', english: 'Yu Garden' },
+  { chinese: '外滩', pinyin: 'Wài tān', english: 'The Bund' },
+  { chinese: '南京路', pinyin: 'Nán jīng lù', english: 'Nanjing Road' },
+  { chinese: '人民广场', pinyin: 'Rén mín guǎng chǎng', english: "People's Square" },
+  { chinese: '上海迪士尼乐园', pinyin: 'Shàng hǎi Dí shì ní lè yuán', english: 'Shanghai Disneyland' },
+  { chinese: '新天地', pinyin: 'Xīn tiān dì', english: 'Xintiandi' },
+  { chinese: '朱家角', pinyin: 'Zhū jiā jiǎo', english: 'Zhujiajiao' },
+  { chinese: '上海科技馆', pinyin: 'Shàng hǎi kē jì guǎn', english: 'Shanghai Science & Technology Museum' },
+  { chinese: '世纪公园', pinyin: 'Shì jì gōng yuán', english: 'Century Park' },
+  { chinese: '一工元', pinyin: 'Yī gōng yuán', english: 'BE1ST Adventure Sports Space' },
+  { chinese: '浦东机场', pinyin: 'Pǔ dōng jī chǎng', english: 'Pudong Airport' },
+];

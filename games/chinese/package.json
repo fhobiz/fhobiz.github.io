@@ -1,0 +1,9 @@
+{
+  "name": "chinese-phrase-tester",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Mobile-friendly Chinese phrase testing game (Say it / Write it)",
+  "scripts": {
+    "start": "npx --yes serve . -l 5050"
+  }
+}
